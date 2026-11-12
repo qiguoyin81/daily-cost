@@ -273,6 +273,8 @@ const UNITS={
 // ---------------- 状态 ----------------
 const S={role:'plan',page:'overview',stage:1,unit:'cdu',sel:'沥青',cfgTab:'tree',ver:1};
 const STAGES=['数据初算','罐区已确认','全厂已发布','月结锁定'];
+const VERS=[{v:1,note:'日初算',who:'系统 · 02:14',stage:null,void:false}]; // stage=null 表示当前版本,取 S.stage
+function newVersion(note,who){const cur=VERS[VERS.length-1];cur.stage=S.stage;cur.void=S.stage<2;S.ver+=1;VERS.push({v:S.ver,note,who,stage:null,void:false});S.stage=Math.min(S.stage,1);}
 try{const r=localStorage.getItem('ax_role');if(r&&ROLES[r])S.role=r;}catch(e){}
 
 // ---------------- 工具 ----------------
@@ -413,7 +415,7 @@ function drawAA(){
 // ---------------- 页面:装置 ----------------
 function unitCalc(u){
   const U=UNITS[u];const tin=sum(U.ins);let outs=U.outs.map(o=>({...o}));let loss=null,gap,unexpl;
-  if(u==='hc'){loss=tin*U.lossPct/100;const known=outs.filter(o=>o.q!=null).reduce((s,o)=>s+o.q,0);outs.find(o=>o.q==null).q=tin-known-loss;gap=0;unexpl=0;}
+  if(u==='hc'){loss=tin*U.lossPct/100;const known=outs.filter(o=>o.q!=null).reduce((s,o)=>s+o.q,0);gap=tin-known;outs.find(o=>o.q==null).q=gap-loss;unexpl=0;}
   else if(u==='cdu'){const o=sum(outs);gap=tin-o;loss=tin*U.lossPct/100;unexpl=gap-loss;}
   else {const o=sum(outs);gap=tin-o;loss=gap;unexpl=0;}
   return {tin,outs,loss,gap,unexpl};
@@ -428,11 +430,11 @@ function vUnits(){
      '每股物料显示取量方法(实测/合计法/差减法/平衡法/公式法/比例法);比例法和平衡法会"吃掉"差额,因此始终并列显示推算前的平衡差和未解释差。',
      '交接差异(装置产出 vs 罐收)在这里看,不并入罐区平衡差。'])
   +`<div class="card"><h2>主链流向</h2><p class="sub">点击装置切换;灰色为后续扩展装置</p><div class="chain">
-   ${['cdu','hc','wo'].map((k,i)=>{const cc=unitCalc(k);return (i?'<div class="ar">→</div>':'')+`<div class="u ${S.unit===k?'on':''}" data-unit="${k}" tabindex="0"><b>${UNITS[k].name}</b><div class="m">${UNITS[k].cap} · 总投入 ${f1(cc.tin)} t</div><div class="m">推算前平衡差 ${f1(cc.gap)} t</div></div>`;}).join('')}
+   ${['cdu','hc','wo'].map((k,i)=>{const cc=unitCalc(k);return (i?'<div class="ar">→</div>':'')+`<div class="u ${S.unit===k?'on':''}" data-unit="${k}" tabindex="0"><b>${UNITS[k].name}</b><div class="m">${UNITS[k].cap} · 总投入 ${f1(cc.tin)} t</div><div class="m">推算前平衡差 ${f1(cc.gap)} t${k==='hc'?'(含未计量尾油)':''}</div></div>`;}).join('')}
    <div class="ar">·</div><div class="u off"><b>加氢改质 / 制氢 / 酸性水汽提</b><div class="m">后续扩展</div></div></div></div>
   <div class="tiles">
    <div class="tile"><div class="l">总投入(合计法)</div><div class="v">${f1(c.tin)}<small>t</small></div><div class="d">${U.ins.map(i=>i.m).join(' + ')}</div></div>
-   <div class="tile"><div class="l">推算前平衡差</div><div class="v">${f1(c.gap)}<small>t</small></div><div class="d">${f1(c.gap/c.tin*100,2)}% · ${S.unit==='hc'?'尾油用差减法,差额并入尾油':'总投入 − 实测产出'}</div></div>
+   <div class="tile"><div class="l">推算前平衡差</div><div class="v">${f1(c.gap)}<small>t</small></div><div class="d">${f1(c.gap/c.tin*100,2)}% · ${S.unit==='hc'?'总投入 − 实测产出;含未计量的尾油,差减后全部并入尾油,须用 T202 罐收校核':'总投入 − 实测产出'}</div></div>
    <div class="tile"><div class="l">损失(${lossMeth})</div><div class="v">${f1(c.loss)}<small>t</small></div><div class="d">${S.unit==='wo'?'平衡法推算':'系数 '+U.lossPct+'%'}</div></div>
    <div class="tile"><div class="l">未解释差</div><div class="v">${f1(c.unexpl)}<small>t</small></div><div class="d">${c.unexpl>20?'超出基线,已生成异常':'在基线内'}</div></div>
    <div class="tile"><div class="l">估算股数</div><div class="v">${c.outs.filter(o=>o.meth!=='实测').length+U.ins.filter(o=>o.meth!=='实测').length+1}<small>股</small></div><div class="d">公式法 / 差减法 / 损失</div></div>
@@ -511,8 +513,7 @@ function vConfirm(){
    <div class="lv"><h3>处理值</h3><p>规则:${r.st==='估算'?r.src:'地磅优先,NC65 并列对账'}</p><p>两侧不一致时按来源优先级取一侧,差异生成对账记录</p><p>处理人:系统 · 02:14</p></div>
    <div class="lv"><h3>确认值 v${S.ver}</h3><p>${r.dir==='库存'?sg(r.q):f1(r.q)} t · ${r.st}</p><p>${S.stage>=2?'统计员 李某 11-12 09:58 发布':'待统计员确认'}</p><p>${S.stage>=2?'已推送日效益':'未推送'}</p></div></div></div>
   <div class="card"><h2>版本历史</h2><div class="tw"><table><thead><tr><th>生产日</th><th>版本</th><th>状态</th><th>变更说明</th><th>操作人</th><th>已通知日效益</th></tr></thead><tbody>
-   ${S.ver>1?`<tr><td>2026-11-11</td><td>v${S.ver}</td><td>${chip('草稿','mute')}</td><td>补采/修订后重算</td><td>系统</td><td>否</td></tr>`:''}
-   <tr><td>2026-11-11</td><td>v1</td><td>${chip(STAGES[S.stage],S.stage>=2?'good':'info')}</td><td>日初算</td><td>系统 · 02:14</td><td>${S.stage>=2?'是':'否'}</td></tr>
+   ${VERS.slice().reverse().map(x=>{const st=x.stage==null?S.stage:x.stage;const lab=x.void?chip('已作废','mute'):chip(STAGES[st],st>=2?'good':'info');return `<tr><td>2026-11-11</td><td>v${x.v}</td><td>${lab}</td><td>${x.note}</td><td>${x.who}</td><td>${!x.void&&st>=2?'是':'否'}</td></tr>`;}).join('')}
    <tr><td>2026-11-03</td><td>v2</td><td>${chip('已发布','good')}</td><td>补录 T102→T101 倒罐 1,240 t,偏差 1.12% 降至 0.31%</td><td>李某(审批:张某)</td><td>是,已重算当日及月累计</td></tr>
    <tr><td>2026-11-03</td><td>v1</td><td>${chip('已作废','mute')}</td><td>日初算</td><td>系统</td><td>是</td></tr></tbody></table></div></div>`;
 }
@@ -618,8 +619,9 @@ document.addEventListener('click',e=>{
   if(a==='tankok'){if(S.stage<1){S.stage=1;}toast('罐区平衡已确认(罐区计量员)');render();}
   else if(a==='publish'){if(S.stage<1){toast('须先由罐区计量员确认罐区平衡');return;}S.stage=Math.max(S.stage,2);render();toast(`v${S.ver} 已发布,确认值已推送日效益`);}
   else if(a==='lockm'){if(S.stage<2){toast('须先发布确认值');return;}S.stage=3;render();toast('11 月已月结锁定,后续修订走审批');}
-  else if(a==='recalc'||a==='recol'){if(a==='recol'){RECOL[0].last='2026-11-12';}S.ver+=1;S.stage=Math.min(S.stage,1);render();toast(a==='recol'?'已重采 11-08:规则 R02 仍触发,仅更新最近计算日':`已重算,生成 v${S.ver} 草稿,待重新发布`);}
-  else if(a==='revise'){toast('已提交修订申请,待口径负责人审批;通过后生成新版本并通知日效益');}
+  else if(a==='recol'){RECOL[0].last='2026-11-12';render();toast('已重采 11-08:规则 R02 仍触发,仅更新最近计算日');}
+  else if(a==='recalc'){if(S.stage>=2){toast('本日已发布或已锁定,不能直接重算;请在"数据确认与发布"页申请修订,经口径负责人审批');return;}newVersion('发布前重算','系统');render();toast(`已重算,生成 v${S.ver},上一草稿作废`);}
+  else if(a==='revise'){if(S.stage<2){toast('本日尚未发布,可直接重算,无需修订审批');return;}newVersion('修订:补录 T305 漏录出库 2 车(口径负责人 张某 已审批)','李某');render();toast(`修订已审批,生成 v${S.ver};发布后通知日效益重算当日及月累计`);}
   else if(a==='mapit'){EXC.find(z=>z.id==='E-1111-04').st='已关闭';toast('已映射,磅单 BD-0386 进入计算');render();}
   else toast('原型:此操作仅演示入口位置');
 });
