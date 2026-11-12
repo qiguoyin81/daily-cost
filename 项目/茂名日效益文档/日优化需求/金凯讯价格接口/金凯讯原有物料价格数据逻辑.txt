@@ -1,0 +1,18 @@
+SELECT 
+       k.ID,
+       k.dataitem,
+       MAX(decode(k.filed_code,'f1', k.filed_value,NULL)) PROD_CODE ,
+       MAX(decode(k.filed_code,'f2', k.filed_value,NULL)) PROD_NAME,
+       MAX(decode(k.filed_code,'f3', k.filed_value,NULL)) MARK_CODE,
+       MAX(decode(k.filed_code,'f4', k.filed_value,NULL)) MARK_NAME,
+       NULL AREA_CODE,
+       MAX(decode(k.filed_code,'f5', k.filed_value,NULL)) AREA_NAME,
+       MAX(decode(k.filed_code,'f6', k.filed_value,NULL)) ENTERPRISE_CODE,
+       MAX(decode(k.filed_code,'f7', k.filed_value,NULL)) ENTERPRISE_NAME,
+       MAX(decode(k.filed_code,'f8', k.filed_value,NULL)) PRICE,
+       MAX(decode(k.filed_code,'f9', k.filed_value,NULL)) PRICE_DATE,
+       k.rq
+        FROM
+displaycenter.jkx_hq_data_v@ods_mm k 
+ WHERE dataitem IN('9550','BXP1','DEX','PRD74','JCLCNF','JCX','LHP','LPGP1','LPGP26','LQP2','PRD71','GNSL','SYJP1')  
+ GROUP BY k.rq,k.dataitem,k.ID;

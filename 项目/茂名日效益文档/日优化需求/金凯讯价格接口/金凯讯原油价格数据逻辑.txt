@@ -1,0 +1,65 @@
+SELECT rq,
+       dataitem,
+       ID,
+       PROD_NAME,
+       last_price,
+       call_buy,
+       call_sale,
+       deal_count,
+       deal_time,
+       take_price,
+       today_price,
+       max_price,
+       min_price,
+       price_date,
+       end_date,
+       store_count,
+       yes_price
+FROM       
+(SELECT k.rq,
+       k.dataitem,
+       k.ID,
+       MAX(decode(k.filed_code,'f1', k.filed_value,NULL)) PROD_NAME ,
+       MAX(decode(k.filed_code,'f2', k.filed_value,NULL)) last_price,
+       MAX(decode(k.filed_code,'f3', k.filed_value,NULL)) call_buy,
+       MAX(decode(k.filed_code,'f4', k.filed_value,NULL)) call_sale,
+       MAX(decode(k.filed_code,'f5', k.filed_value,NULL)) deal_count,
+       MAX(decode(k.filed_code,'f6', k.filed_value,NULL)) deal_time,
+       MAX(decode(k.filed_code,'f8', k.filed_value,NULL)) take_price,
+       MAX(decode(k.filed_code,'f9', k.filed_value,NULL)) today_price,
+       MAX(decode(k.filed_code,'f10', k.filed_value,NULL)) max_price,
+       MAX(decode(k.filed_code,'f11', k.filed_value,NULL)) min_price,
+       MAX(decode(k.filed_code,'f12', k.filed_value,NULL)) price_date,
+       MAX(decode(k.filed_code,'f13', k.filed_value,NULL)) end_date,
+       MAX(decode(k.filed_code,'f14', k.filed_value,NULL)) store_count,
+       MAX(decode(k.filed_code,'f7', k.filed_value,NULL)) yes_price
+        FROM
+        displaycenter.jkx_hq_data_v@ods_mm k
+        WHERE k.dataitem ='9201'
+ GROUP BY k.rq,k.dataitem,k.ID
+UNION
+ SELECT k.rq,
+       k.dataitem,
+       k.ID,
+       MAX(decode(k.filed_code,'f1', k.filed_value,NULL)) PROD_NAME ,
+       MAX(decode(k.filed_code,'f2', k.filed_value,NULL)) last_price,
+       MAX(decode(k.filed_code,'f3', k.filed_value,NULL)) call_buy,
+       MAX(decode(k.filed_code,'f4', k.filed_value,NULL)) call_sale,
+       MAX(decode(k.filed_code,'f5', k.filed_value,NULL)) deal_count,
+       MAX(decode(k.filed_code,'f6', k.filed_value,NULL)) deal_time,
+       MAX(decode(k.filed_code,'f7', k.filed_value,NULL)) take_price,
+       MAX(decode(k.filed_code,'f8', k.filed_value,NULL)) today_price,
+       MAX(decode(k.filed_code,'f9', k.filed_value,NULL)) max_price,
+       MAX(decode(k.filed_code,'f10', k.filed_value,NULL)) min_price,
+       MAX(decode(k.filed_code,'f11', k.filed_value,NULL)) price_date,
+       MAX(decode(k.filed_code,'f12', k.filed_value,NULL)) end_date,
+       MAX(decode(k.filed_code,'f13', k.filed_value,NULL)) store_count,
+       NULL yes_price
+        FROM
+        displaycenter.jkx_hq_data_v@ods_mm k
+        WHERE k.dataitem IN('9102','9901')
+ GROUP BY k.rq,k.dataitem,k.ID);
+
+
+ 
+

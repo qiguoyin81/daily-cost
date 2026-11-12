@@ -1,0 +1,10 @@
+SELECT k.rq,
+       k.dataitem,
+       k.ID,
+       MAX(decode(k.filed_code,'f1', k.filed_value,null)) PROD_NAME ,
+       MAX(decode(k.filed_code,'f2', k.filed_value,null)) PRICE,
+       MAX(decode(k.filed_code,'f3', k.filed_value,null)) PRICE_DATE
+        FROM
+        displaycenter.jkx_hq_data_v@ods_mm k
+        WHERE k.dataitem='9550A'
+ GROUP BY k.rq,k.dataitem,k.ID
