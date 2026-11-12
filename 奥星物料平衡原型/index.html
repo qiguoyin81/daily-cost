@@ -391,7 +391,7 @@ function vTanks(){
   </div>`;
 }
 function tankTrace(id){
-  const t=TANKS.find(x=>x.id===id);const vol=t.e/(t.rho-.0011)/0.9842;
+  const t=TANKS.find(x=>x.id===id);const roof=t.type==='浮顶'?86.0:0;const vol=(t.e+roof)/(t.rho-.0011)/0.9842;
   $('#tankTrace').innerHTML=`<div class="trace" style="margin-top:12px">
    <div class="lv"><h3>原始值 · ${t.src}</h3><p>${t.id} 液位 ${t.lvl.toFixed(3)} m,温度 ${t.tmp} ℃</p><p>采集时刻 2026-11-12 00:00:00(前后 10 分钟稳定)</p><p>ρ20 ${t.rho.toFixed(4)} g/cm³,化验单 HY-20261110-0${t.id.slice(1)}</p></div>
    <div class="lv"><h3>处理值 · 规则 GB/T 1885</h3><p>罐容表 v2024-03 查得视体积 ${f1(vol+12)} m³</p><p>扣底水 12.0 m³ → ${f1(vol)} m³;VCF20 0.9842</p><p>质量 = V20 × (ρ20 − 0.0011)${t.type==='浮顶'?' − 浮顶重 86.0 t':''}</p></div>
