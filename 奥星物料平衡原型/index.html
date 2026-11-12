@@ -1,0 +1,630 @@
+<title>奥星日物料平衡原型</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: 左侧导航 + 顶部生产日/角色条 + 内容区;每页"设计说明"折叠卡说明用途、角色与操作 */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --sunk:#f7f8fa; --ink:#121820; --ink2:#4a5561; --muted:#7f8994;
+  --line:#e2e6eb; --line2:#cfd5dc; --accent:#1d5fa6; --accent-ink:#ffffff; --accent-soft:#e7eff9;
+  --side:#18212c; --side-ink:#c9d2dc; --side-active:#26354a; --demo:#fff4d6; --demo-ink:#6b4d00;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --neg:#e34948;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --good-soft:#e5f5e5; --warn-soft:#fff3d6; --serious-soft:#fdeae2; --crit-soft:#fbe5e5; --info-soft:#e7eff9;
+  --band:rgba(42,120,214,.08);
+  --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1318; --surface:#181d24; --sunk:#141920; --ink:#eef1f4; --ink2:#b9c2cc; --muted:#8a939d;
+  --line:#2a313a; --line2:#39424d; --accent:#4b8fe0; --accent-ink:#0b1220; --accent-soft:#1d2b3d;
+  --side:#0b0f14; --side-ink:#aeb8c3; --side-active:#1d2734; --demo:#3a2e10; --demo-ink:#f3d58a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --neg:#e66767;
+  --good-soft:#15301a; --warn-soft:#362b10; --serious-soft:#3a2219; --crit-soft:#3b1a1a; --info-soft:#1d2b3d;
+  --band:rgba(57,135,229,.12); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1318; --surface:#181d24; --sunk:#141920; --ink:#eef1f4; --ink2:#b9c2cc; --muted:#8a939d;
+  --line:#2a313a; --line2:#39424d; --accent:#4b8fe0; --accent-ink:#0b1220; --accent-soft:#1d2b3d;
+  --side:#0b0f14; --side-ink:#aeb8c3; --side-active:#1d2734; --demo:#3a2e10; --demo-ink:#f3d58a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --neg:#e66767;
+  --good-soft:#15301a; --warn-soft:#362b10; --serious-soft:#3a2219; --crit-soft:#3b1a1a; --info-soft:#1d2b3d;
+  --band:rgba(57,135,229,.12); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55}
+button{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh}
+.side{background:var(--side);color:var(--side-ink);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:4px 10px 16px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:12px}
+.brand b{display:block;color:#fff;font-size:15px;letter-spacing:.02em}
+.brand span{font-size:12px;opacity:.7}
+.navgrp{font-size:11px;letter-spacing:.08em;opacity:.55;padding:12px 10px 4px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;color:var(--side-ink);text-decoration:none;font-size:13.5px}
+.nav a:hover{background:var(--side-active)}
+.nav a.on{background:var(--side-active);color:#fff;box-shadow:inset 2px 0 0 var(--s1)}
+.nav a:focus-visible{outline:2px solid var(--s1);outline-offset:1px}
+.badge{font-size:11px;padding:0 6px;border-radius:9px;background:rgba(255,255,255,.1)}
+.badge.hot{background:var(--crit);color:#fff}
+.badge.p2{background:transparent;border:1px solid rgba(255,255,255,.25)}
+.main{min-width:0;display:flex;flex-direction:column}
+.demo{background:var(--demo);color:var(--demo-ink);font-size:12.5px;padding-block:6px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.field{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2)}
+.field select,.field input{font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line2);border-radius:6px;padding:4px 8px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:5px 12px;cursor:pointer;font-size:13px}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.stepper{display:flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:wrap;font-size:12px}
+.step{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:12px;background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+.step.done{color:var(--ink2);background:var(--good-soft);border-color:transparent}
+.step.cur{color:var(--ink);background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.step i{font-style:normal;font-size:11px}
+.arrow{color:var(--muted)}
+.content{padding-block:20px 48px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px;max-width:1360px;width:100%}
+.phead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.phead h1{font-size:21px;margin:0;text-wrap:balance}
+.phead p{margin:2px 0 0;color:var(--ink2);font-size:13px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line2);background:var(--surface);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.design{background:var(--surface);border:1px dashed var(--line2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--ink2)}
+.design summary{cursor:pointer;color:var(--ink);font-weight:600}
+.design ul{margin:8px 0 2px;padding-left:18px;display:grid;gap:3px}
+.design b{color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.card h2{font-size:14.5px;margin:0 0 2px}
+.card .sub{font-size:12px;color:var(--muted);margin:0 0 10px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.g2e{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.tile .l{font-size:12px;color:var(--ink2)}
+.tile .v{font-size:22px;font-weight:600;margin-top:2px;white-space:nowrap}
+.tile .v small{font-size:12px;font-weight:400;color:var(--muted);margin-left:3px}
+.tile .d{font-size:12px;color:var(--muted);margin-top:2px}
+.eq{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+.eq .t{flex:1 1 110px;background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+.eq .t .l{font-size:12px;color:var(--ink2)}
+.eq .t .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.eq .t.res{background:var(--accent-soft);border-color:var(--accent)}
+.eq .op{align-self:center;color:var(--muted);font-size:18px}
+.tw{overflow-x:auto;margin:0 -4px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-weight:600;color:var(--ink2);text-align:left;font-size:12px;padding:7px 8px;border-bottom:1px solid var(--line2);white-space:nowrap;background:var(--sunk)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}
+tr.click:hover td,tr.sel td{background:var(--accent-soft)}
+tfoot td{font-weight:600;border-top:1px solid var(--line2)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:1px 8px;border-radius:10px;white-space:nowrap;color:var(--ink)}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.good{background:var(--good-soft)} .chip.good::before{background:var(--good)}
+.chip.warn{background:var(--warn-soft)} .chip.warn::before{background:var(--warn)}
+.chip.serious{background:var(--serious-soft)} .chip.serious::before{background:var(--serious)}
+.chip.crit{background:var(--crit-soft)} .chip.crit::before{background:var(--crit)}
+.chip.info{background:var(--info-soft)} .chip.info::before{background:var(--s1)}
+.chip.mute{background:var(--sunk);color:var(--ink2)} .chip.mute::before{background:var(--muted)}
+.tag{font-size:11.5px;padding:0 6px;border:1px solid var(--line2);border-radius:4px;color:var(--ink2);white-space:nowrap}
+.pos{color:var(--ink)} .mono{font-family:var(--mono);font-size:12px}
+.meter{display:inline-block;width:70px;height:8px;border-radius:4px;background:var(--accent-soft);vertical-align:middle;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--s1);border-radius:4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.legend i.ln{height:2px;width:14px}
+svg text{fill:var(--muted);font-size:11px;font-family:var(--sans)}
+.todo{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.todo li{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+.todo li div{min-width:0}
+.todo .m{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:8px 12px;cursor:pointer;color:var(--ink2);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px}
+.chain .u{flex:1 1 180px;border:1px solid var(--line2);border-radius:8px;padding:10px 12px;background:var(--sunk);cursor:pointer;min-width:0}
+.chain .u.on{border-color:var(--accent);background:var(--accent-soft)}
+.chain .u.off{opacity:.55;cursor:default}
+.chain .u b{display:block}
+.chain .u .m{font-size:12px;color:var(--ink2)}
+.chain .ar{align-self:center;color:var(--muted)}
+.trace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.trace .lv{border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--sunk);min-width:0}
+.trace .lv h3{margin:0 0 6px;font-size:13px}
+.trace .lv p{margin:2px 0;font-size:12.5px;color:var(--ink2);white-space:normal}
+.segbar{display:flex;gap:2px;height:28px;margin:4px 0 12px}
+.segbar div{border-radius:4px;color:#fff;font-size:11.5px;padding:0 6px;display:flex;align-items:center;white-space:nowrap;overflow:visible;min-width:0}
+.ul{display:flex;justify-content:space-between;font-size:13px;gap:8px}
+.tree{list-style:none;margin:0;padding:0;font-size:13px}
+.tree ul{list-style:none;margin:0;padding-left:18px;border-left:1px solid var(--line)}
+.tree li{padding:3px 0}
+.tree .k{color:var(--muted);font-size:12px;margin-left:6px}
+.report{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:22px 26px;max-width:900px}
+.report h2{text-align:center;font-size:18px;margin:0}
+.report .meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--ink2);margin:10px 0 12px}
+.report .sign{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:16px;font-size:12.5px;color:var(--ink2)}
+.note{font-size:12px;color:var(--muted)}
+.tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line2);box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:6px;padding:6px 9px;font-size:12px;z-index:50;max-width:260px}
+.toast{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:6px;font-size:13px;z-index:60;max-width:calc(100vw - 40px)}
+.lock{font-size:11.5px;color:var(--muted)}
+@media (max-width:1100px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:static;height:auto;padding:10px max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px))}
+  .brand{border:0;padding:2px 4px 8px;margin:0}
+  .navgrp{display:none}
+  .nav{display:flex;gap:4px;overflow-x:auto}
+  .nav a{white-space:nowrap}
+  .g2e,.trace{grid-template-columns:minmax(0,1fr)}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stepper{margin-left:0}
+  .top{position:static}
+  .report{padding:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><b>日物料平衡</b><span>东营奥星石化 · 原型</span></div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <div class="main">
+    <div class="demo">演示原型:页面内所有数量、罐号、人员均为示例数据,用于讨论页面形态,不是奥星实际生产数据。</div>
+    <div class="top">
+      <label class="field" for="pday">生产日 <input id="pday" type="date" value="2026-11-11"></label>
+      <div class="field"><span>角色视角</span><div class="seg" id="roles"></div></div>
+      <div class="stepper" id="stepper"></div>
+    </div>
+    <div class="content" id="view"></div>
+  </div>
+</div>
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// ---------------- 演示数据 ----------------
+const ROLES={
+  shop:{name:'车间',who:'罐区计量员 / 装置工艺员',home:'tanks'},
+  plan:{name:'计划',who:'生产统计员 / 计划调度',home:'overview'},
+  fin:{name:'财务',who:'成本会计',home:'report'}
+};
+const PAGES=[
+  {id:'overview',name:'全厂日平衡总览',grp:'每日',roles:['plan','fin','shop']},
+  {id:'tanks',name:'罐区库存与账实差异',grp:'每日',roles:['shop','plan','fin']},
+  {id:'units',name:'装置级平衡',grp:'每日',roles:['shop','plan','fin'],p2:true},
+  {id:'exceptions',name:'异常与补采待办',grp:'每日',roles:['shop','plan']},
+  {id:'confirm',name:'数据确认与发布',grp:'每日',roles:['plan','shop','fin']},
+  {id:'report',name:'日报输出',grp:'输出',roles:['fin','plan','shop']},
+  {id:'config',name:'主数据与取量规则',grp:'配置',roles:['plan']}
+];
+const TANKS=[
+ {id:'T101',area:'原料罐区',mat:'进口燃料油',type:'浮顶',cap:20000,lvl:13.62,tmp:52.4,rho:0.9632,b:12480.6,r:3060.2,p:2990.1,e:12546.9,nc:12530.0,src:'IoT 罐表'},
+ {id:'T102',area:'原料罐区',mat:'进口燃料油',type:'浮顶',cap:20000,lvl:10.71,tmp:51.8,rho:0.9618,b:9812.3,r:3060.2,p:2990.1,e:9877.0,nc:9880.0,src:'IoT 罐表'},
+ {id:'T103',area:'原料罐区',mat:'进口燃料油',type:'浮顶',cap:20000,lvl:16.48,tmp:49.6,rho:0.9655,b:15206.4,r:0,p:0,e:15201.9,nc:15240.0,src:'IoT 罐表',flag:'罐表 4 小时无变化'},
+ {id:'T201',area:'中间罐区',mat:'蜡油(裂化进料)',type:'拱顶',cap:8000,lvl:9.02,tmp:78.2,rho:0.9015,b:3120.5,r:2668.5,p:1702.6,e:4082.1,nc:4060.0,src:'IoT 罐表'},
+ {id:'T202',area:'中间罐区',mat:'加氢尾油',type:'拱顶',cap:5000,lvl:8.16,tmp:61.0,rho:0.8433,b:1840.2,r:636.9,p:418.5,e:2056.8,nc:2050.0,src:'IoT 罐表'},
+ {id:'T301',area:'成品罐区',mat:'国六柴油',type:'内浮顶',cap:10000,lvl:7.12,tmp:18.6,rho:0.8352,b:4210.7,r:2324.7,p:2486.2,e:4046.1,nc:4052.0,src:'IoT 罐表',flag:'ρ20 超 3 天未化验'},
+ {id:'T302',area:'成品罐区',mat:'加氢石脑油',type:'内浮顶',cap:5000,lvl:9.31,tmp:16.9,rho:0.7286,b:2016.4,r:621.5,p:612.5,e:2023.9,nc:2020.0,src:'IoT 罐表'},
+ {id:'T303',area:'成品罐区',mat:'基础油 100N',type:'拱顶',cap:3000,lvl:5.84,tmp:35.2,rho:0.8604,b:1102.8,r:62.1,p:286.4,e:877.6,nc:880.0,src:'IoT 罐表'},
+ {id:'T304',area:'成品罐区',mat:'工业白油',type:'拱顶',cap:3000,lvl:6.42,tmp:24.1,rho:0.8551,b:980.4,r:341.8,p:341.8,e:979.1,nc:979.0,src:'IoT 罐表'},
+ {id:'T305',area:'成品罐区',mat:'道路沥青',type:'拱顶',cap:10000,lvl:11.06,tmp:146.0,rho:1.0210,b:6880.3,r:1193.4,p:1188.6,e:6877.5,nc:6850.0,src:'IoT 罐表'},
+ {id:'V401',area:'成品罐区',mat:'液化气',type:'球罐',cap:2000,lvl:8.94,tmp:12.3,rho:0.5480,b:982.4,r:133.2,p:168.3,e:944.9,nc:946.0,src:'人工检尺'}
+];
+TANKS.forEach(t=>{t.diff=+(t.b+t.r-t.p-t.e).toFixed(1);t.aa=+(t.e-t.nc).toFixed(1);t.aaPct=t.aa/t.e*100;});
+const IN=[
+ {mat:'进口燃料油',q:6120.4,src:'地磅 54 车',nc:6098.2,st:'实测'},
+ {mat:'外购天然气(制氢)',q:52.3,src:'FQ-0901 72,900 Nm³',nc:52.3,st:'实测'}
+];
+const OUT=[
+ {mat:'国六柴油',q:2486.2,src:'地磅 78 车',nc:2486.2,st:'实测'},
+ {mat:'加氢石脑油',q:612.5,src:'地磅 21 车',nc:612.5,st:'实测'},
+ {mat:'基础油 60N/100N/250N',q:286.4,src:'地磅 10 车',nc:286.4,st:'实测'},
+ {mat:'工业白油',q:341.8,src:'地磅 12 车',nc:341.8,st:'实测'},
+ {mat:'道路沥青',q:1188.6,src:'地磅 36 车',nc:1138.2,st:'实测'},
+ {mat:'液化气',q:168.3,src:'地磅 7 车',nc:168.3,st:'实测'},
+ {mat:'液氨',q:21.4,src:'地磅 2 车',nc:21.4,st:'实测'},
+ {mat:'硫氢化钠',q:9.6,src:'人工录入',nc:9.6,st:'替代'}
+];
+const AUX=[
+ {mat:'制氢工艺蒸汽(反应耗水)',q:117.7,src:'公式法:天然气 × 36/16(按反应计量)',nc:null,st:'估算'},
+ {mat:'烧碱(32% 液碱)',q:14.2,src:'NC65 材料出库',nc:14.2,st:'实测'},
+ {mat:'其他化学助剂',q:1.6,src:'NC65 材料出库',nc:1.6,st:'实测'}
+];
+const EMIT=[
+ {mat:'制氢 CO₂ 排放',q:143.8,src:'公式法:天然气 × 44/16(碳平衡)',nc:null,st:'估算'},
+ {mat:'原料脱水(含油污水)',q:18.4,src:'化验含水 0.30% × 原料进厂',nc:null,st:'估算'}
+];
+const SELF={mat:'自用燃料气',q:100.0,st:'估算',src:'公式法:干气产量 − 外送'};
+const LOSS={mat:'火炬及加工损失',q:22.8,st:'估算',src:'比例法:原料 × 0.37%'};
+const sum=(a,k='q')=>a.reduce((s,x)=>s+x[k],0);
+const TOT={in:sum(IN),aux:sum(AUX),emit:sum(EMIT),out:sum(OUT),stockB:sum(TANKS,'b'),stockE:sum(TANKS,'e')};
+TOT.stock=TOT.stockE-TOT.stockB;
+TOT.bal=TOT.in+TOT.aux-TOT.out-SELF.q-TOT.emit-LOSS.q-TOT.stock;
+TOT.pct=TOT.bal/IN[0].q*100;
+const DAYS=[];{const d0=new Date(2026,9,13);for(let i=0;i<30;i++){const d=new Date(d0);d.setDate(d0.getDate()+i);DAYS.push((d.getMonth()+1)+'-'+String(d.getDate()).padStart(2,'0'));}}
+const DEV=[.21,-.12,.35,.18,.44,-.08,.27,.31,-.22,.15,.38,.62,.19,-.05,.29,.33,.12,-.18,.24,.41,.36,1.12,.28,.17,-.09,.33,null,.26,.38,+TOT.pct.toFixed(2)];
+const DEVNOTE={21:'倒罐未标记,已补录后 v2 重算',26:'IoT 网关中断 6 小时,在补采计划中',11:'超 0.5% 关注线,原因:沥青装车跨日'};
+
+let EXC=[
+ {id:'E-1111-01',obj:'T103 原料罐',rule:'罐表冻结',val:'液位 4 h 无变化,日变化 −4.5 t 且无收付',thr:'变化 ≤ 0.5 t',who:'罐区计量员',role:'shop',sev:'crit',st:'待处理'},
+ {id:'E-1111-02',obj:'T305 沥青罐',rule:'账实差异超限',val:'+27.5 t(+0.40%)',thr:'±0.30%',who:'仓储文员',role:'plan',sev:'serious',st:'处理中',note:'疑 NC65 销售出库漏录 2 车'},
+ {id:'E-1111-03',obj:'加氢裂化 FI-2003',rule:'采集缺失',val:'02:10–05:40 无数据',thr:'采集率 ≥ 98%',who:'装置工艺员',role:'shop',sev:'warn',st:'已标注',note:'按 T202 罐收替代'},
+ {id:'E-1111-04',obj:'地磅磅单 BD-0386',rule:'品名未映射',val:'品名"燃料油(俄)"',thr:'须挂到平衡物料',who:'系统管理员',role:'plan',sev:'warn',st:'待处理'},
+ {id:'E-1111-05',obj:'T301 柴油罐',rule:'密度过期',val:'ρ20 最近化验 11-08',thr:'≤ 2 天',who:'质检化验员',role:'shop',sev:'warn',st:'待处理'}
+];
+let RECOL=[
+ {day:'2026-11-08',rule:'R02 主要罐表全部冻结',done:false,last:'2026-11-11',note:'IoT 网关中断 6 h,待网关补传历史'},
+ {day:'2026-11-03',rule:'R04 全厂偏差率 > 1.0%',done:true,last:'2026-11-04',note:'补录倒罐后重算,偏差 1.12% → 发布 v2'}
+];
+const UNITS={
+ cdu:{name:'常减压',cap:'220 万 t/a',ins:[{m:'进口燃料油',q:5980.2,meth:'实测',src:'FI-1001 进料累计'}],
+   outs:[{m:'干气',q:41.9,meth:'实测',src:'FI-1021'},{m:'液化气',q:62.0,meth:'实测',src:'FI-1022'},{m:'石脑油',q:452.6,meth:'实测',src:'FI-1031'},{m:'柴油馏分',q:1512.4,meth:'实测',src:'FI-1041'},{m:'蜡油',q:2668.5,meth:'实测',src:'FI-1051 / T201 罐收校核'},{m:'渣油(去沥青)',q:1193.4,meth:'公式法',src:'= T305 罐收'}],
+   lossPct:.30},
+ hc:{name:'加氢裂化',cap:'60 万 t/a',ins:[{m:'蜡油',q:1702.6,meth:'公式法',src:'= T201 罐付出'},{m:'氢气',q:42.1,meth:'实测',src:'FI-2001'}],
+   outs:[{m:'干气',q:38.4,meth:'实测',src:'FI-2011'},{m:'液化气',q:71.2,meth:'实测',src:'FI-2012'},{m:'加氢石脑油',q:168.9,meth:'实测',src:'FI-2021'},{m:'柴油',q:812.3,meth:'实测',src:'FI-2031'},{m:'加氢尾油',q:null,meth:'差减法',src:'总投入 − 其他产出 − 损失;对照 T202 罐收 636.9'}],
+   lossPct:.70},
+ wo:{name:'异构脱蜡(白油)',cap:'15 万 t/a',ins:[{m:'加氢尾油',q:418.5,meth:'公式法',src:'= T202 罐付出'},{m:'氢气',q:6.8,meth:'实测',src:'FI-3001'}],
+   outs:[{m:'工业白油',q:341.8,meth:'实测',src:'= T304 罐收'},{m:'基础油 100N',q:62.1,meth:'实测',src:'= T303 罐收'},{m:'轻组分',q:15.3,meth:'实测',src:'FI-3021'}],
+   lossPct:null}
+};
+// ---------------- 状态 ----------------
+const S={role:'plan',page:'overview',stage:1,unit:'cdu',sel:'沥青',cfgTab:'tree',ver:1};
+const STAGES=['数据初算','罐区已确认','全厂已发布','月结锁定'];
+try{const r=localStorage.getItem('ax_role');if(r&&ROLES[r])S.role=r;}catch(e){}
+
+// ---------------- 工具 ----------------
+const $=s=>document.querySelector(s);
+const f1=(n,d=1)=>n==null?'—':Number(n).toLocaleString('zh-CN',{minimumFractionDigits:d,maximumFractionDigits:d});
+const sg=(n,d=1)=>(n>0?'+':'')+f1(n,d);
+const chip=(t,c)=>`<span class="chip ${c}">${t}</span>`;
+const stChip=s=>({'实测':chip('实测','good'),'替代':chip('替代','info'),'估算':chip('估算','warn'),'未完成':chip('未完成','crit')}[s]||chip(s,'mute'));
+const can=(...r)=>r.includes(S.role);
+const btn=(label,act,roles,cls='')=>{const ok=roles.includes(S.role);return `<button class="btn ${cls}" data-act="${act}" ${ok?'':'disabled title="当前角色无此操作权限"'}>${label}</button>`;};
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(t._h);t._h=setTimeout(()=>t.hidden=true,2600);}
+const tip=$('#tip');
+function showTip(e,html){tip.innerHTML=html;tip.hidden=false;const x=Math.min(e.clientX+14,innerWidth-tip.offsetWidth-8),y=Math.min(e.clientY+14,innerHeight-tip.offsetHeight-8);tip.style.left=x+'px';tip.style.top=y+'px';}
+function hideTip(){tip.hidden=true;}
+function design(items){return `<details class="design"><summary>设计说明:这一页做什么、给谁看</summary><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul></details>`;}
+function head(title,desc,acts=''){return `<div class="phead"><div><h1>${title}</h1><p>${desc}</p></div><div class="actions">${acts}</div></div>`;}
+
+// ---------------- 页面:总览 ----------------
+function vOverview(){
+  const cr=confirmRows().filter(r=>r.dir!=='库存'), est=cr.filter(r=>r.st!=='实测').reduce((a,r)=>a+r.q,0), base=cr.reduce((a,r)=>a+r.q,0);
+  const openExc=EXC.filter(e=>e.st!=='已关闭').length;
+  const tiles=[
+   ['原料进厂',f1(TOT.in),'t',`地磅净重,含外购气折吨;另辅料及工艺水 ${f1(TOT.aux)} t`],
+   ['产品出厂',f1(TOT.out),'t','8 种产品,地磅净重'],
+   ['罐存变化',sg(TOT.stock),'t','11 只罐期末 − 期初'],
+   ['全厂平衡差',f1(TOT.bal),'t',`偏差率 ${f1(TOT.pct,2)}%,关注线 ±0.50%`],
+   ['估算/替代占比',f1(est/base*100),'%','目标 ≤ 5%'],
+   ['计量点采集完整率','97.6','%','83 / 85 个计量点,目标 ≥ 98%']
+  ];
+  return head('全厂日平衡总览',`生产日 2026-11-11(0 点日结) · 版本 v${S.ver} · ${STAGES[S.stage]}`,
+     btn('确认全厂并发布','publish',['plan'],'pri')+btn('重算本日','recalc',['plan'])+btn('导出日平衡表','export',['plan','fin']))
+  +design(['<b>计划(统计员)</b>每天 10 点前在这里看全厂收、发、存是否平,处理完异常后点"确认全厂并发布",确认值推送日效益。',
+     '<b>财务</b>只读,看平衡差与估算占比判断当天数字能不能用;<b>车间</b>从这里跳到罐区页处理本岗异常。',
+     '平衡式就是厂界质量守恒:所有项一律折成吨,除原料和产品外,辅料、工艺水、CO₂ 排放、原料脱水也必须进式子,否则平衡差里会混入固定偏差。',
+     '顶部是平衡式本身,任何一项可点进明细;趋势图只画确认值,补采中的日子留空不连线,避免把未完成数据画成真值。',
+     '不做调度指令、工单、过程追溯,只回答"昨天进、出、存对不对得上"。'])
+  +`<div class="tiles">${tiles.map(t=>`<div class="tile"><div class="l">${t[0]}</div><div class="v">${t[1]}<small>${t[2]}</small></div><div class="d">${t[3]}</div></div>`).join('')}</div>
+  <div class="card"><h2>平衡式</h2><p class="sub">厂界质量守恒:原料 + 辅料及工艺水 − 产品 − 自用 − 排放 − 损失 − 罐存变化 = 平衡差;偏差率 = 平衡差 ÷ 原料油进厂量。单位均为吨;装置与罐区之间的内部流转已抵销,在线量视为不变。</p>
+   <div class="eq">
+    <div class="t"><div class="l">原料进厂</div><div class="v">${f1(TOT.in)}</div></div><div class="op">+</div>
+    <div class="t"><div class="l">辅料及工艺水</div><div class="v">${f1(TOT.aux)}</div></div><div class="op">−</div>
+    <div class="t"><div class="l">产品出厂</div><div class="v">${f1(TOT.out)}</div></div><div class="op">−</div>
+    <div class="t"><div class="l">自用燃料 ${stChip('估算')}</div><div class="v">${f1(SELF.q)}</div></div><div class="op">−</div>
+    <div class="t"><div class="l">排放 ${stChip('估算')}</div><div class="v">${f1(TOT.emit)}</div></div><div class="op">−</div>
+    <div class="t"><div class="l">火炬及损失 ${stChip('估算')}</div><div class="v">${f1(LOSS.q)}</div></div><div class="op">−</div>
+    <div class="t"><div class="l">罐存变化</div><div class="v">${sg(TOT.stock)}</div></div><div class="op">=</div>
+    <div class="t res"><div class="l">平衡差 · ${f1(TOT.pct,2)}%</div><div class="v">${f1(TOT.bal)} t</div></div>
+   </div></div>
+  <div class="grid g2">
+   <div class="card"><h2>近 30 天全厂偏差率</h2><p class="sub">确认值口径,单位 %。浅色带为 ±0.50% 关注线,虚线以外 ±1.00% 触发补采规则 R04。</p><div id="devChart"></div>
+    <div class="legend"><span><i class="ln" style="background:var(--s1)"></i>日偏差率</span><span><i style="background:var(--band);border:1px solid var(--line2)"></i>±0.50% 关注带</span><span><i style="background:var(--crit);border-radius:50%"></i>超 1.00%</span><span><i style="background:var(--surface);border:1px dashed var(--muted);border-radius:50%"></i>补采中(无确认值)</span></div></div>
+   <div class="card"><h2>今日待办</h2><p class="sub">${openExc} 条异常未关闭,1 个日期在补采计划中</p>
+    <ul class="todo">${EXC.slice(0,4).map(e=>`<li><div><div>${e.obj} · ${e.rule}</div><div class="m">${e.who} · ${e.val}</div></div>${chip(e.st,e.st==='待处理'?e.sev:'info')}</li>`).join('')}</ul>
+    <p style="margin:10px 0 0"><a href="#exceptions">查看全部异常与补采 →</a></p></div>
+  </div>
+  <div class="grid g2e">
+   <div class="card"><h2>原料进厂明细</h2><p class="sub">平衡取地磅,NC65 采购入库并列展示,差异进账实差异</p>${ioTable(IN)}</div>
+   <div class="card"><h2>产品出厂明细</h2><p class="sub">道路沥青 NC65 少 50.4 t,对应异常 E-1111-02(影响账实差异,不影响平衡差)</p>${ioTable(OUT)}</div>
+   <div class="card"><h2>辅料及工艺水</h2><p class="sub">不是原料但进入产品或排放的物质;制氢反应耗水按 CH₄ + 2H₂O → CO₂ + 4H₂ 计量</p>${ioTable(AUX)}</div>
+   <div class="card"><h2>排放</h2><p class="sub">不形成产品、离开厂界的物质;无直接计量,按碳平衡和化验含水估算</p>${ioTable(EMIT)}</div>
+  </div>`;
+}
+function ioTable(rows){
+  return `<div class="tw"><table><thead><tr><th>物料</th><th class="n">平衡量 t</th><th class="n">NC65 t</th><th class="n">差</th><th>来源</th><th>状态</th></tr></thead><tbody>${rows.map(r=>{const d=r.q-r.nc;return `<tr><td>${r.mat}</td><td class="n">${f1(r.q)}</td><td class="n">${f1(r.nc)}</td><td class="n">${r.nc==null||Math.abs(d)<.05?'—':sg(d)}</td><td>${r.src}</td><td>${stChip(r.st)}</td></tr>`}).join('')}</tbody>
+  <tfoot><tr><td>合计</td><td class="n">${f1(sum(rows))}</td><td class="n">${rows.some(r=>r.nc==null)?'—':f1(sum(rows,'nc'))}</td><td class="n">${rows.some(r=>r.nc==null)?'—':sg(sum(rows)-sum(rows,'nc'))}</td><td></td><td></td></tr></tfoot></table></div>`;
+}
+function drawDev(){
+  const el=$('#devChart');if(!el)return;
+  const W=680,H=230,L=40,R=12,T=12,B=26,yMin=-.6,yMax=1.4;
+  const x=i=>L+i*(W-L-R)/29, y=v=>T+(yMax-v)*(H-T-B)/(yMax-yMin);
+  let g='';
+  [-0.5,0,.5,1].forEach(v=>{g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v.toFixed(1)}</text>`;});
+  g=`<rect x="${L}" y="${y(.5)}" width="${W-L-R}" height="${y(-.5)-y(.5)}" fill="var(--band)"/>`+g+`<line x1="${L}" x2="${W-R}" y1="${y(1)}" y2="${y(1)}" stroke="var(--crit)" stroke-dasharray="4 3" stroke-width="1"/>`;
+  [0,7,14,21,29].forEach(i=>g+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle">${DAYS[i]}</text>`);
+  let path='',pen=false;DEV.forEach((v,i)=>{if(v==null){pen=false;return;}path+=(pen?'L':'M')+x(i)+' '+y(v);pen=true;});
+  g+=`<path d="${path}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  DEV.forEach((v,i)=>{
+    if(v==null){g+=`<circle cx="${x(i)}" cy="${y(0)}" r="4.5" fill="var(--surface)" stroke="var(--muted)" stroke-dasharray="2 2"/>`;}
+    else if(Math.abs(v)>1){g+=`<circle cx="${x(i)}" cy="${y(v)}" r="5" fill="var(--crit)" stroke="var(--surface)" stroke-width="2"/>`;}
+    else if(i===29){g+=`<circle cx="${x(i)}" cy="${y(v)}" r="5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/><text x="${x(i)-8}" y="${y(v)-10}" text-anchor="end" style="fill:var(--ink);font-weight:600">${v.toFixed(2)}%</text>`;}
+  });
+  g+=`<line id="xh" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="var(--line2)" visibility="hidden"/>`;
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="近30天全厂偏差率折线图">${g}<rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent" id="hit"/></svg>`;
+  const svg=el.querySelector('svg'),hit=el.querySelector('#hit'),xh=el.querySelector('#xh');
+  hit.addEventListener('mousemove',e=>{const r=svg.getBoundingClientRect();const px=(e.clientX-r.left)*W/r.width;const i=Math.max(0,Math.min(29,Math.round((px-L)/((W-L-R)/29))));xh.setAttribute('x1',x(i));xh.setAttribute('x2',x(i));xh.setAttribute('visibility','visible');
+    const v=DEV[i];showTip(e,`<b>2026-${DAYS[i]}</b><br>${v==null?'无确认值(补采中)':'偏差率 '+v.toFixed(2)+'%'}${DEVNOTE[i]?'<br><span class="note">'+DEVNOTE[i]+'</span>':''}`);});
+  hit.addEventListener('mouseleave',()=>{hideTip();xh.setAttribute('visibility','hidden');});
+}
+
+// ---------------- 页面:罐区 ----------------
+function vTanks(){
+  const areas=['原料罐区','中间罐区','成品罐区'];
+  return head('罐区库存与账实差异','11 只罐 · 日结时刻 00:00 前后 10 分钟稳定值 · 体积→质量按 GB/T 1885',
+     btn('录入检尺','dip',['shop'])+btn('标记收付/倒罐','mark',['shop'])+btn('确认罐区平衡','tankok',['shop'],'pri'))
+  +design(['<b>车间(罐区计量员)</b>的主工作台:先看红黄状态的罐,检尺录入或标记收付/倒罐,然后"确认罐区平衡"。',
+     '<b>计划</b>看各罐区平衡差和账实差异是否可解释;<b>财务</b>关注账实差异列,它决定月末 NC65 库存与实物是否对得上。',
+     '三类差异分开:罐自身的平衡差(期初+收−付−期末)、账实差异(IoT 罐存 − NC65 库存)、交接差异在装置页看。',
+     '每行可展开取数链:液位 → 罐容表视体积 → 扣底水 → ×VCF20 ×(ρ20−0.0011) → 扣浮顶重。'])
+  +`<div class="tiles">${areas.map(a=>{const ts=TANKS.filter(t=>t.area===a);const b=sum(ts,'b'),e=sum(ts,'e'),d=sum(ts,'diff');return `<div class="tile"><div class="l">${a} · ${ts.length} 只罐</div><div class="v">${f1(e,0)}<small>t</small></div><div class="d">罐变化 ${sg(e-b)} t · 平衡差 ${f1(d)} t</div></div>`;}).join('')}
+   <div class="tile"><div class="l">账实差异合计</div><div class="v">${sg(sum(TANKS,'aa'))}<small>t</small></div><div class="d">IoT 罐存 − NC65 库存</div></div>
+   <div class="tile"><div class="l">超限罐</div><div class="v">2<small>只</small></div><div class="d">T103 罐表冻结、T305 账实超限</div></div>
+   <div class="tile"><div class="l">人工检尺</div><div class="v">1<small>只</small></div><div class="d">V401 球罐未接 IoT</div></div></div>
+  <div class="card"><h2>单罐日平衡</h2><p class="sub">单位 t;点击一行看取数链。罐容率按罐容 m³ 折算</p><div class="tw"><table><thead><tr><th>罐号</th><th>罐区</th><th>物料</th><th>罐型</th><th class="n">液位 m</th><th class="n">温度 ℃</th><th class="n">ρ20</th><th>罐容率</th><th class="n">期初</th><th class="n">收</th><th class="n">付</th><th class="n">期末</th><th class="n">平衡差</th><th class="n">NC65 库存</th><th class="n">账实差异</th><th>取数来源</th><th>状态</th></tr></thead><tbody>
+  ${TANKS.map(t=>{const fill=Math.min(100,t.e/t.rho/t.cap*100);const st=t.flag?chip(t.flag,t.id==='T103'?'crit':'warn'):Math.abs(t.aaPct)>.3?chip('账实超限','serious'):chip('正常','good');
+   return `<tr class="click" data-tank="${t.id}"><td class="mono">${t.id}</td><td>${t.area}</td><td>${t.mat}</td><td>${t.type}</td><td class="n">${t.lvl.toFixed(2)}</td><td class="n">${t.tmp.toFixed(1)}</td><td class="n">${t.rho.toFixed(4)}</td><td><span class="meter"><i style="width:${fill}%"></i></span> <span class="note">${fill.toFixed(0)}%</span></td><td class="n">${f1(t.b)}</td><td class="n">${f1(t.r)}</td><td class="n">${f1(t.p)}</td><td class="n">${f1(t.e)}</td><td class="n">${f1(t.diff)}</td><td class="n">${f1(t.nc)}</td><td class="n">${sg(t.aa)}</td><td>${t.src}</td><td>${st}</td></tr>`;}).join('')}
+  </tbody></table></div><div id="tankTrace"></div></div>
+  <div class="grid g2">
+   <div class="card"><h2>账实差异(IoT 罐存 − NC65 库存)</h2><p class="sub">单位 t。右侧为实物多于账面,左侧为实物少于账面;竖虚线为 ±0.30% 允许差折算到 T305 的量</p><div id="aaChart"></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>实物多于账面</span><span><i style="background:var(--neg)"></i>实物少于账面</span></div></div>
+   <div class="card"><h2>差异怎么读</h2><ul class="todo">
+    <li><div><div>T305 道路沥青 +27.5 t</div><div class="m">与发出明细中 NC65 少 50.4 t 同源:2 车销售出库未入账,补单后差异消失</div></div>${chip('处理中','info')}</li>
+    <li><div><div>T103 燃料油 −38.1 t</div><div class="m">罐表冻结,当日用前日稳定值插补为处理值;须人工检尺后重算</div></div>${chip('待检尺','crit')}</li>
+    <li><div><div>T201 蜡油 +22.1 t</div><div class="m">NC65 装置投产按月入账,日内账面滞后,属口径差,不派单</div></div>${chip('口径差','mute')}</li></ul></div>
+  </div>`;
+}
+function tankTrace(id){
+  const t=TANKS.find(x=>x.id===id);const vol=t.e/(t.rho-.0011)/0.9842;
+  $('#tankTrace').innerHTML=`<div class="trace" style="margin-top:12px">
+   <div class="lv"><h3>原始值 · ${t.src}</h3><p>${t.id} 液位 ${t.lvl.toFixed(3)} m,温度 ${t.tmp} ℃</p><p>采集时刻 2026-11-12 00:00:00(前后 10 分钟稳定)</p><p>ρ20 ${t.rho.toFixed(4)} g/cm³,化验单 HY-20261110-0${t.id.slice(1)}</p></div>
+   <div class="lv"><h3>处理值 · 规则 GB/T 1885</h3><p>罐容表 v2024-03 查得视体积 ${f1(vol+12)} m³</p><p>扣底水 12.0 m³ → ${f1(vol)} m³;VCF20 0.9842</p><p>质量 = V20 × (ρ20 − 0.0011)${t.type==='浮顶'?' − 浮顶重 86.0 t':''}</p></div>
+   <div class="lv"><h3>确认值 · v${S.ver}</h3><p>期末罐存 ${f1(t.e)} t</p><p>平衡差 ${f1(t.diff)} t,账实差异 ${sg(t.aa)} t</p><p>${S.stage>=1?'罐区计量员 王某 11-12 09:42 确认':'待罐区计量员确认'}</p></div></div>`;
+}
+function drawAA(){
+  const el=$('#aaChart');if(!el)return;
+  const rows=TANKS,W=560,rowH=22,T=6,L=60,R=50,H=T+rows.length*rowH+22;const mx=45;
+  const x=v=>L+(v+mx)/(2*mx)*(W-L-R);let g='';
+  [-40,-20,0,20,40].forEach(v=>g+=`<line x1="${x(v)}" x2="${x(v)}" y1="${T}" y2="${H-20}" stroke="${v===0?'var(--line2)':'var(--line)'}"/><text x="${x(v)}" y="${H-6}" text-anchor="middle">${v}</text>`);
+  const lim=6877.5*.003;g+=`<line x1="${x(lim)}" x2="${x(lim)}" y1="${T}" y2="${H-20}" stroke="var(--muted)" stroke-dasharray="3 3"/><line x1="${x(-lim)}" x2="${x(-lim)}" y1="${T}" y2="${H-20}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+  rows.forEach((t,i)=>{const yy=T+i*rowH+4,h=14,v=t.aa,x0=x(0),x1=x(v);const w=Math.max(1,Math.abs(x1-x0));const xs=v>=0?x0:x1;
+    const r=Math.min(4,w/2);const col=v>=0?'var(--s1)':'var(--neg)';
+    const d=v>=0?`M${xs} ${yy}h${w-r}a${r} ${r} 0 0 1 ${r} ${r}v${h-2*r}a${r} ${r} 0 0 1 -${r} ${r}h-${w-r}z`:`M${xs+w} ${yy}h-${w-r}a${r} ${r} 0 0 0 -${r} ${r}v${h-2*r}a${r} ${r} 0 0 0 ${r} ${r}h${w-r}z`;
+    g+=`<text x="${L-8}" y="${yy+11}" text-anchor="end">${t.id}</text><path d="${d}" fill="${col}"/><text x="${v>=0?x1+4:x1-4}" y="${yy+11}" text-anchor="${v>=0?'start':'end'}" style="fill:var(--ink2)">${sg(v)}</text>
+    <rect class="hb" data-i="${i}" x="${L}" y="${yy-3}" width="${W-L-R}" height="${rowH}" fill="transparent"/>`;});
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="各罐账实差异条形图">${g}</svg>`;
+  el.querySelectorAll('.hb').forEach(r=>{r.addEventListener('mousemove',e=>{const t=TANKS[r.dataset.i];showTip(e,`<b>${t.id} ${t.mat}</b><br>IoT ${f1(t.e)} t · NC65 ${f1(t.nc)} t<br>差异 ${sg(t.aa)} t(${sg(t.aaPct,2)}%)`);});r.addEventListener('mouseleave',hideTip);});
+}
+
+// ---------------- 页面:装置 ----------------
+function unitCalc(u){
+  const U=UNITS[u];const tin=sum(U.ins);let outs=U.outs.map(o=>({...o}));let loss=null,gap,unexpl;
+  if(u==='hc'){loss=tin*U.lossPct/100;const known=outs.filter(o=>o.q!=null).reduce((s,o)=>s+o.q,0);outs.find(o=>o.q==null).q=tin-known-loss;gap=0;unexpl=0;}
+  else if(u==='cdu'){const o=sum(outs);gap=tin-o;loss=tin*U.lossPct/100;unexpl=gap-loss;}
+  else {const o=sum(outs);gap=tin-o;loss=gap;unexpl=0;}
+  return {tin,outs,loss,gap,unexpl};
+}
+function vUnits(){
+  const c=unitCalc(S.unit),U=UNITS[S.unit];
+  const lossMeth=S.unit==='wo'?'平衡法':'比例法';
+  return head('装置级平衡',`二期上线 · 主链 常减压 → 加氢裂化 → 白油 · 生产日 2026-11-11`,
+     btn('确认装置投入产出','unitok',['shop'],'pri')+btn('录入开停工存料','startstop',['shop'])+btn('调整比例法系数','coef',['plan']))
+  +design(['<b>二期</b>页面,首期隐藏或只读展示"罐付出=装置进料、罐收入=装置产出"的公式法过渡值,并标为估算。',
+     '<b>车间(装置工艺员)</b>确认投入产出、补录开停工存料;<b>计划</b>维护比例法系数;<b>财务</b>只读,收率与估算标识直接影响装置日效益。',
+     '每股物料显示取量方法(实测/合计法/差减法/平衡法/公式法/比例法);比例法和平衡法会"吃掉"差额,因此始终并列显示推算前的平衡差和未解释差。',
+     '交接差异(装置产出 vs 罐收)在这里看,不并入罐区平衡差。'])
+  +`<div class="card"><h2>主链流向</h2><p class="sub">点击装置切换;灰色为后续扩展装置</p><div class="chain">
+   ${['cdu','hc','wo'].map((k,i)=>{const cc=unitCalc(k);return (i?'<div class="ar">→</div>':'')+`<div class="u ${S.unit===k?'on':''}" data-unit="${k}" tabindex="0"><b>${UNITS[k].name}</b><div class="m">${UNITS[k].cap} · 总投入 ${f1(cc.tin)} t</div><div class="m">推算前平衡差 ${f1(cc.gap)} t</div></div>`;}).join('')}
+   <div class="ar">·</div><div class="u off"><b>加氢改质 / 制氢 / 酸性水汽提</b><div class="m">后续扩展</div></div></div></div>
+  <div class="tiles">
+   <div class="tile"><div class="l">总投入(合计法)</div><div class="v">${f1(c.tin)}<small>t</small></div><div class="d">${U.ins.map(i=>i.m).join(' + ')}</div></div>
+   <div class="tile"><div class="l">推算前平衡差</div><div class="v">${f1(c.gap)}<small>t</small></div><div class="d">${f1(c.gap/c.tin*100,2)}% · ${S.unit==='hc'?'尾油用差减法,差额并入尾油':'总投入 − 实测产出'}</div></div>
+   <div class="tile"><div class="l">损失(${lossMeth})</div><div class="v">${f1(c.loss)}<small>t</small></div><div class="d">${S.unit==='wo'?'平衡法推算':'系数 '+U.lossPct+'%'}</div></div>
+   <div class="tile"><div class="l">未解释差</div><div class="v">${f1(c.unexpl)}<small>t</small></div><div class="d">${c.unexpl>20?'超出基线,已生成异常':'在基线内'}</div></div>
+   <div class="tile"><div class="l">估算股数</div><div class="v">${c.outs.filter(o=>o.meth!=='实测').length+U.ins.filter(o=>o.meth!=='实测').length+1}<small>股</small></div><div class="d">公式法 / 差减法 / 损失</div></div>
+   <div class="tile"><div class="l">交接差异</div><div class="v">${S.unit==='hc'?sg(c.outs.find(o=>o.m==='加氢尾油').q-636.9):S.unit==='cdu'?'+0.0':'+0.0'}<small>t</small></div><div class="d">${S.unit==='hc'?'尾油产出 − T202 罐收':'产出与罐收一致'}</div></div></div>
+  <div class="grid g2">
+   <div class="card"><h2>${U.name} 投入产出</h2><p class="sub">单位 t;状态为该股物料的质量状态</p><div class="tw"><table><thead><tr><th>方向</th><th>物料</th><th class="n">数量</th><th class="n">收率</th><th>取量方法</th><th>来源 / 公式</th><th>状态</th></tr></thead><tbody>
+    ${U.ins.map(i=>`<tr><td>进</td><td>${i.m}</td><td class="n">${f1(i.q)}</td><td class="n"></td><td><span class="tag">${i.meth}</span></td><td>${i.src}</td><td>${stChip(i.meth==='实测'?'实测':'估算')}</td></tr>`).join('')}
+    <tr><td>总投入</td><td>合计</td><td class="n"><b>${f1(c.tin)}</b></td><td class="n">100.0%</td><td><span class="tag">合计法</span></td><td>下一级"进"且参与效益计算的物料之和</td><td></td></tr>
+    ${c.outs.map(o=>`<tr><td>出</td><td>${o.m}</td><td class="n">${f1(o.q)}</td><td class="n">${f1(o.q/c.tin*100)}%</td><td><span class="tag">${o.meth}</span></td><td>${o.src}</td><td>${stChip(o.meth==='实测'?'实测':'估算')}</td></tr>`).join('')}
+    <tr><td>损失</td><td>加工损失</td><td class="n">${f1(c.loss)}</td><td class="n">${f1(c.loss/c.tin*100)}%</td><td><span class="tag">${lossMeth}</span></td><td>${S.unit==='wo'?'投入 − 产出':'总投入 × '+U.lossPct+'%'}</td><td>${stChip('估算')}</td></tr>
+    ${c.unexpl?`<tr><td>差</td><td>未解释差</td><td class="n">${f1(c.unexpl)}</td><td class="n">${f1(c.unexpl/c.tin*100,2)}%</td><td></td><td>不认定为损耗,进异常</td><td>${chip('待解释','warn')}</td></tr>`:''}
+   </tbody></table></div></div>
+   <div class="card"><h2>产品收率构成</h2><p class="sub">当前装置各产品占总投入;损失与未解释差合并为灰色。切换上方装置查看其他装置</p><div id="yieldBars"></div><div class="legend" id="yieldLegend"></div></div>
+  </div>`;
+}
+function drawYield(){
+  const el=$('#yieldBars');if(!el)return;const cols=['var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)','var(--s7)'];
+  let h='';const legendSet=[];
+  [S.unit].forEach(k=>{const c=unitCalc(k);const parts=c.outs.map((o,i)=>({n:o.m,q:o.q,c:cols[i]}));parts.push({n:'损失及未解释',q:c.loss+c.unexpl,c:'var(--muted)'});
+    h+=`<div class="ul"><span>${UNITS[k].name}</span><span class="note">${f1(c.tin)} t</span></div><div class="segbar">${parts.map(p=>{const pct=p.q/c.tin*100;const dark=p.c==='var(--s4)';return `<div style="flex:${p.q} 0 0;background:${p.c};${dark?'color:#0b0b0b':''}" data-tip="${UNITS[k].name} · ${p.n}|${f1(p.q)} t · ${f1(pct)}%">${pct>=12?f1(pct,0)+'%':''}</div>`;}).join('')}</div>`;
+    if(k===S.unit)parts.forEach(p=>legendSet.push(`<span><i style="background:${p.c}"></i>${p.n}</span>`));});
+  el.innerHTML=h;$('#yieldLegend').innerHTML=legendSet.join('');
+  el.querySelectorAll('[data-tip]').forEach(d=>{d.addEventListener('mousemove',e=>{const[a,b]=d.dataset.tip.split('|');showTip(e,`<b>${a}</b><br>${b}`);});d.addEventListener('mouseleave',hideTip);});
+}
+
+// ---------------- 页面:异常与补采 ----------------
+function vExc(){
+  const mine=EXC.filter(e=>e.role===S.role);
+  return head('异常与补采待办','校验规则自动生成异常并派到责任岗;不正常的日期进补采计划,重采后自动重算',
+     btn('立即补采重算','recol',['plan'],'pri')+btn('新建人工异常','newexc',['plan','shop']))
+  +design(['所有岗位的"收件箱":默认只看本岗的单,计划可看全部。<b>车间</b>处理罐表、检尺、流量计类;<b>计划</b>处理映射、账实、补采。',
+     '异常单字段:对象、触发规则、实际值、阈值、责任岗、原因、处理措施、状态;关闭必须写原因。',
+     '补采计划沿用茂名补采规则 3.1:每天算前一日时同时重采"未完成"日期,仍触发规则则只更新最近计算日;窗口 7 天,超期转人工,月结后不再自动补采。',
+     '发布前未关闭的异常不阻止发布,但相关数量带"估算"或"未完成"状态进入确认值。'])
+  +`<div class="tiles">
+   <div class="tile"><div class="l">待处理</div><div class="v">${EXC.filter(e=>e.st==='待处理').length}<small>条</small></div><div class="d">本岗 ${mine.length} 条</div></div>
+   <div class="tile"><div class="l">处理中 / 已标注</div><div class="v">${EXC.filter(e=>e.st==='处理中'||e.st==='已标注').length}<small>条</small></div><div class="d">已有原因,待补单或替代</div></div>
+   <div class="tile"><div class="l">发布前关闭率</div><div class="v">60<small>%</small></div><div class="d">目标 ≥ 90%</div></div>
+   <div class="tile"><div class="l">补采计划</div><div class="v">${RECOL.filter(r=>!r.done).length}<small>日</small></div><div class="d">窗口 7 天</div></div>
+   <div class="tile"><div class="l">采集完整率</div><div class="v">97.6<small>%</small></div><div class="d">缺:FI-2003、V401 液位</div></div>
+   <div class="tile"><div class="l">待映射</div><div class="v">1<small>项</small></div><div class="d">未映射数据不参与计算</div></div></div>
+  <div class="card"><h2>异常清单 · 2026-11-11</h2><p class="sub">${can('plan')?'计划视角显示全部':'仅显示本岗,切到"计划"可看全部'}</p><div class="tw"><table><thead><tr><th>编号</th><th>对象</th><th>规则</th><th>实际值</th><th>阈值</th><th>责任岗</th><th>原因 / 措施</th><th>状态</th><th>操作</th></tr></thead><tbody>
+  ${(can('plan')?EXC:mine).map(e=>`<tr><td class="mono">${e.id}</td><td>${e.obj}</td><td>${e.rule}</td><td>${e.val}</td><td>${e.thr}</td><td>${e.who}</td><td>${e.note||'<span class="note">未填写</span>'}</td><td>${chip(e.st,e.st==='待处理'?e.sev:e.st==='已关闭'?'good':'info')}</td><td>${e.st==='已关闭'?'<span class="lock">已关闭</span>':`<button class="btn sm" data-close="${e.id}" ${(e.role===S.role||S.role==='plan')?'':'disabled'}>写原因并关闭</button>`}</td></tr>`).join('')||'<tr><td colspan="9" class="note">本岗暂无异常</td></tr>'}
+  </tbody></table></div></div>
+  <div class="grid g2e">
+   <div class="card"><h2>补采计划</h2><p class="sub">日效益首页默认显示"最新有效日":最近一个无需补采或已完成补采的日期</p><div class="tw"><table><thead><tr><th>生产日</th><th>触发规则</th><th>是否完成</th><th>最近计算日</th><th>说明</th></tr></thead><tbody>
+    ${RECOL.map(r=>`<tr><td>${r.day}</td><td>${r.rule}</td><td>${r.done?chip('已完成','good'):chip('未完成','crit')}</td><td>${r.last}</td><td style="white-space:normal">${r.note}</td></tr>`).join('')}</tbody></table></div></div>
+   <div class="card"><h2>补采规则(当前生效)</h2><p class="sub">项由 [对象][物料][方向] 组成;组合结果为真即需补采</p><div class="tw"><table><thead><tr><th>序号</th><th>规则</th><th>表达式</th><th>关系</th></tr></thead><tbody>
+    <tr><td>R01</td><td>原料未进厂</td><td class="mono">[全厂][原料油][进] = 0</td><td>或</td></tr>
+    <tr><td>R02</td><td>主要罐表全部冻结</td><td class="mono">冻结罐数 ≮ 主要罐数</td><td>或</td></tr>
+    <tr><td>R03</td><td>采集率过低</td><td class="mono">计量点采集率 ≯ 90%</td><td>或</td></tr>
+    <tr><td>R04</td><td>全厂偏差超限</td><td class="mono">|偏差率| ≮ 1.0%</td><td>或</td></tr>
+    <tr><td>R05</td><td>NC65 单据异常偏少</td><td class="mono">当日单据数 ~ (0, 30)</td><td>且 R01</td></tr></tbody></table></div></div>
+  </div>`;
+}
+
+// ---------------- 页面:确认 ----------------
+function confirmRows(){
+  const rows=[];IN.forEach(r=>rows.push({...r,dir:'原料'}));AUX.forEach(r=>rows.push({...r,dir:'辅料'}));OUT.forEach(r=>rows.push({...r,dir:'产品'}));
+  rows.push({...SELF,dir:'自用',nc:null});EMIT.forEach(r=>rows.push({...r,dir:'排放'}));rows.push({...LOSS,dir:'损失',nc:null});
+  rows.push({mat:'罐存变化(11 只罐)',q:TOT.stock,dir:'库存',src:'IoT 罐表 10 只 + 检尺 1 只',nc:null,st:'替代'});return rows;
+}
+function vConfirm(){
+  const rows=confirmRows();const r=rows.find(x=>x.mat.startsWith(S.sel))||rows[0];
+  return head('数据确认与发布',`原始值只追加、处理值记规则、确认值带版本 · 当前 v${S.ver} · ${STAGES[S.stage]}`,
+     btn('确认罐区平衡','tankok',['shop'])+btn('确认全厂并发布','publish',['plan'],'pri')+btn('申请修订已发布日','revise',['plan','shop'])+btn('月结锁定','lockm',['fin']))
+  +design(['三层数据并排:<b>原始值</b>(谁、何时、哪个系统)→ <b>处理值</b>(换算、差值、替代、估算的规则和依据)→ <b>确认值</b>(版本、确认人)。任一数字点开都能穿透到来源。',
+     '确认是逐级的:罐区计量员确认罐区 → 统计员确认全厂并发布 → 财务月结锁定。顶部进度条就是这个流程。',
+     '已发布日的修订必须经口径负责人审批,生成新版本并通知日效益重算当日与月累计;版本历史在下方可见。',
+     '<b>财务</b>在这里看每个数量的质量状态,决定日效益是否采信"估算"数据。'])
+  +`<div class="card"><h2>全厂确认值 · 2026-11-11</h2><p class="sub">点击一行查看三层数据与穿透链</p><div class="tw"><table><thead><tr><th>方向</th><th>平衡物料</th><th class="n">原始值</th><th>原始来源</th><th class="n">处理值 t</th><th>处理规则</th><th class="n">确认值 t</th><th>质量状态</th><th>版本</th></tr></thead><tbody>
+   ${rows.map(x=>`<tr class="click ${x===r?'sel':''}" data-sel="${x.mat}"><td>${x.dir}</td><td>${x.mat}</td><td class="n">${x.mat.startsWith('外购天然气')?'72,900 Nm³':x.mat.startsWith('罐存')?'液位 ×11':f1(x.q)}</td><td>${x.src}</td><td class="n">${x.dir==='库存'?sg(x.q):f1(x.q)}</td><td>${x.st==='估算'?x.src.split(':')[0]:x.mat.startsWith('外购天然气')?'标方 × 0.7174 kg/Nm³':x.dir==='库存'?'GB/T 1885;T103 前日值插补':x.st==='替代'?'人工录入替代':x.src.startsWith('NC65')?'取 NC65 出库':'取地磅净重'}</td><td class="n"><b>${x.dir==='库存'?sg(x.q):f1(x.q)}</b></td><td>${stChip(x.st)}</td><td>v${S.ver}</td></tr>`).join('')}
+  </tbody></table></div></div>
+  <div class="card"><h2>穿透:${r.mat}</h2><p class="sub">确认值 → 处理值 → 原始值,逐层可查</p><div class="trace">
+   <div class="lv"><h3>原始值</h3><p>来源:${r.src}</p>${r.mat==='道路沥青'?'<p>磅单 BD20261111-0201 … -0236,共 36 张,净重合计 1,188.6 t</p><p>NC65 销售出库 34 张,1,138.2 t(缺 2 张)</p>':'<p>采集与入库时间、来源单号逐条保存,只追加不覆盖</p>'}</div>
+   <div class="lv"><h3>处理值</h3><p>规则:${r.st==='估算'?r.src:'地磅优先,NC65 并列对账'}</p><p>两侧不一致时按来源优先级取一侧,差异生成对账记录</p><p>处理人:系统 · 02:14</p></div>
+   <div class="lv"><h3>确认值 v${S.ver}</h3><p>${r.dir==='库存'?sg(r.q):f1(r.q)} t · ${r.st}</p><p>${S.stage>=2?'统计员 李某 11-12 09:58 发布':'待统计员确认'}</p><p>${S.stage>=2?'已推送日效益':'未推送'}</p></div></div></div>
+  <div class="card"><h2>版本历史</h2><div class="tw"><table><thead><tr><th>生产日</th><th>版本</th><th>状态</th><th>变更说明</th><th>操作人</th><th>已通知日效益</th></tr></thead><tbody>
+   ${S.ver>1?`<tr><td>2026-11-11</td><td>v${S.ver}</td><td>${chip('草稿','mute')}</td><td>补采/修订后重算</td><td>系统</td><td>否</td></tr>`:''}
+   <tr><td>2026-11-11</td><td>v1</td><td>${chip(STAGES[S.stage],S.stage>=2?'good':'info')}</td><td>日初算</td><td>系统 · 02:14</td><td>${S.stage>=2?'是':'否'}</td></tr>
+   <tr><td>2026-11-03</td><td>v2</td><td>${chip('已发布','good')}</td><td>补录 T102→T101 倒罐 1,240 t,偏差 1.12% 降至 0.31%</td><td>李某(审批:张某)</td><td>是,已重算当日及月累计</td></tr>
+   <tr><td>2026-11-03</td><td>v1</td><td>${chip('已作废','mute')}</td><td>日初算</td><td>系统</td><td>是</td></tr></tbody></table></div></div>`;
+}
+
+// ---------------- 页面:配置 ----------------
+function vConfig(){
+  const tabs={tree:'平衡对象树',mp:'计量点',um:'装置取量规则',map:'编码映射',rules:'校验规则'};
+  let body='';
+  if(S.cfgTab==='tree')body=`<ul class="tree"><li><b>奥星全厂</b><span class="k">全厂 · 责任人 统计主管</span><ul>
+    <li>原料罐区<span class="k">罐区 · NC65 仓库 YL01</span><ul><li>燃料油罐组<span class="k">T101 T102 T103</span></li></ul></li>
+    <li>中间罐区<span class="k">罐区 · YL02</span><ul><li>T201 蜡油</li><li>T202 加氢尾油</li></ul></li>
+    <li>成品罐区<span class="k">罐区 · CP01</span><ul><li>柴油 T301</li><li>石脑油 T302</li><li>基础油 T303</li><li>白油 T304</li><li>沥青 T305</li><li>液化气 V401</li></ul></li>
+    <li>常减压装置<span class="k">装置 · 成本中心 SC01 · 二期</span></li><li>加氢裂化装置<span class="k">装置 · SC02 · 二期</span></li><li>异构脱蜡白油装置<span class="k">装置 · SC03 · 二期</span></li>
+    <li>厂门(虚拟)<span class="k">虚拟装置 · 地磅 1#、2#</span></li></ul></li></ul>`;
+  if(S.cfgTab==='mp')body=`<div class="tw"><table><thead><tr><th>计量点</th><th>归属对象</th><th>物料</th><th>方向</th><th>器具</th><th>IoT 位号</th><th>优先级</th><th>检定到期</th></tr></thead><tbody>
+    <tr><td class="mono">MP-WB01</td><td>厂门</td><td>进口燃料油</td><td>进</td><td>地磅</td><td>—</td><td>1</td><td>2027-03-31</td></tr>
+    <tr><td class="mono">MP-1001</td><td>常减压</td><td>进口燃料油</td><td>进</td><td>流量计</td><td class="mono">FI-1001.PV_TOT</td><td>1</td><td>2026-12-15</td></tr>
+    <tr><td class="mono">MP-T101</td><td>T101</td><td>进口燃料油</td><td>存</td><td>罐表</td><td class="mono">LT-T101.PV</td><td>1(检尺 2)</td><td>2027-01-20</td></tr>
+    <tr><td class="mono">MP-2003</td><td>加氢裂化</td><td>加氢尾油</td><td>出</td><td>流量计</td><td class="mono">FI-2003.PV_TOT</td><td>2(T202 罐收 1)</td><td>${chip('2026-11-20 将到期','warn')}</td></tr>
+    <tr><td class="mono">MP-V401</td><td>V401</td><td>液化气</td><td>存</td><td>人工</td><td>—</td><td>1</td><td>—</td></tr></tbody></table></div>`;
+  if(S.cfgTab==='um')body=`<p class="note" style="margin-top:0">按计算级别从下往上、从实测到推算依次计算(借鉴茂名装置物料模型)。</p><div class="tw"><table><thead><tr><th>装置</th><th>物料</th><th>进出类型</th><th>级别</th><th>计算级别</th><th>取量方法</th><th>参数 / 公式</th><th>参与效益</th></tr></thead><tbody>
+    <tr><td>常减压</td><td>总投入</td><td>总投入</td><td>1</td><td>2</td><td><span class="tag">合计法</span></td><td>下级"进"之和</td><td>是</td></tr>
+    <tr><td>常减压</td><td>进口燃料油</td><td>进</td><td>2</td><td>1</td><td><span class="tag">实测</span></td><td class="mono">MP-1001</td><td>是</td></tr>
+    <tr><td>常减压</td><td>渣油</td><td>出</td><td>2</td><td>1</td><td><span class="tag">公式法</span></td><td class="mono">[T305][沥青][收]</td><td>是</td></tr>
+    <tr><td>常减压</td><td>加工损失</td><td>损失</td><td>2</td><td>3</td><td><span class="tag">比例法</span></td><td>总投入 × 0.30%</td><td>是</td></tr>
+    <tr><td>加氢裂化</td><td>加氢尾油</td><td>出</td><td>2</td><td>3</td><td><span class="tag">差减法</span></td><td>总投入 − 其他产出 − 损失</td><td>是</td></tr>
+    <tr><td>白油</td><td>加工损失</td><td>损失</td><td>2</td><td>4</td><td><span class="tag">平衡法</span></td><td>投入 − 产出</td><td>是</td></tr></tbody></table></div>`;
+  if(S.cfgTab==='map')body=`<div class="tw"><table><thead><tr><th>平衡物料</th><th>NC65 物料编码</th><th>地磅品名</th><th>生效日期</th><th>状态</th></tr></thead><tbody>
+    <tr><td>进口燃料油</td><td class="mono">0101001 / 0101002 / 0101005</td><td>燃料油、燃料油(马瑞)</td><td>2026-01-01</td><td>${chip('生效','good')}</td></tr>
+    <tr><td>基础油 60N/100N/250N</td><td class="mono">0302001–0302003</td><td>基础油</td><td>2026-01-01</td><td>${chip('多牌号归并 · 待确认','warn')}</td></tr>
+    <tr><td>—</td><td>—</td><td>燃料油(俄)</td><td>—</td><td>${chip('待映射','crit')} <button class="btn sm" data-act="mapit" ${can('plan')?'':'disabled'}>挂到"进口燃料油"</button></td></tr></tbody></table></div>`;
+  if(S.cfgTab==='rules')body=`<div class="tw"><table><thead><tr><th>规则</th><th>适用</th><th>判定</th><th>责任岗</th><th>级别</th></tr></thead><tbody>
+    <tr><td>罐表冻结</td><td>所有 IoT 罐表</td><td>液位连续 4 h 变化 &lt; 1 mm</td><td>罐区计量员</td><td>${chip('严重','crit')}</td></tr>
+    <tr><td>累计表回零/翻转</td><td>流量计</td><td>累计值下降 → 按量程加回并提示</td><td>装置工艺员</td><td>${chip('提示','info')}</td></tr>
+    <tr><td>跳变</td><td>流量计、罐表</td><td>5 分钟变化 &gt; 量程 20%</td><td>装置工艺员</td><td>${chip('关注','warn')}</td></tr>
+    <tr><td>账实差异超限</td><td>单罐</td><td>|IoT − NC65| ÷ 罐存 &gt; 0.30%(基线期后定)</td><td>仓储文员</td><td>${chip('关注','serious')}</td></tr>
+    <tr><td>密度过期</td><td>单罐</td><td>最近化验 &gt; 2 天</td><td>质检化验员</td><td>${chip('关注','warn')}</td></tr></tbody></table></div>`;
+  return head('主数据与取量规则','由系统管理员和口径负责人维护;所有配置带版本与生效日期',btn('新增','add',['plan'])+btn('提交口径负责人审批','approve',['plan'],'pri'))
+  +design(['低频页面,上线前摸底期集中配置,之后只在新增罐、换表、改口径时改。原型里由"计划"角色代表系统管理员和口径负责人。',
+     '<b>平衡对象树</b>决定三级平衡的边界;<b>计量点</b>把 IoT 位号、地磅磅点、NC65 仓库挂到同一对象上;未映射的数据进"待映射"队列,不参与计算。',
+     '<b>装置取量规则</b>即茂名装置物料模型:级别、计算级别、五种方法与参数。',
+     '改动生效需要口径负责人审批,且只影响生效日之后;回溯重算走修订流程。'])
+  +`<div class="card"><div class="tabs">${Object.entries(tabs).map(([k,v])=>`<button data-cfg="${k}" class="${S.cfgTab===k?'on':''}">${v}</button>`).join('')}</div>${body}</div>`;
+}
+
+// ---------------- 页面:日报 ----------------
+function vReport(){
+  return head('日报输出','日平衡表、罐存日报、异常清单、月累计对账表;数据取当日最新确认值',
+     btn('导出 Excel','export',['plan','fin','shop'])+btn('导出 PDF','export',['plan','fin','shop'])+btn('月累计对账表','monthly',['fin']))
+  +design(['<b>财务</b>默认落在这里:日报是给管理层和日效益用的成品,版本号和质量状态印在表头,避免拿草稿数去算效益。',
+     '<b>计划</b>发布后从这里导出替代现在手工汇总的生产日报;<b>车间</b>导出罐存日报。',
+     '估算与替代数据在报表中保留标识(⁽估⁾ ⁽替⁾),不洗成"看似精确"的数字。',
+     '月累计对账表与 NC65 月结库存、月末盘点对比,差额按天分摊后锁定。'])
+  +`<div class="tabs"><button class="on">日平衡表</button><button disabled>罐存日报</button><button disabled>异常清单</button><button disabled>月累计与对账</button></div>
+  <div class="report"><h2>东营奥星石油化工有限公司 · 全厂日物料平衡表</h2>
+   <div class="meta"><span>生产日:2026-11-11(00:00–24:00)</span><span>版本:v${S.ver} · ${STAGES[S.stage]}</span><span>单位:吨</span><span>演示数据</span></div>
+   <div class="tw"><table><thead><tr><th>项目</th><th>物料</th><th class="n">本日</th><th class="n">月累计</th><th class="n">NC65 本日</th><th>备注</th></tr></thead><tbody>
+   ${IN.map((r,i)=>`<tr><td>${i?'':'收入'}</td><td>${r.mat}</td><td class="n">${f1(r.q)}</td><td class="n">${f1(r.q*10.96)}</td><td class="n">${f1(r.nc)}</td><td></td></tr>`).join('')}
+   <tr><td></td><td><b>收入合计</b></td><td class="n"><b>${f1(TOT.in)}</b></td><td class="n"><b>${f1(TOT.in*10.96)}</b></td><td class="n">${f1(sum(IN,'nc'))}</td><td></td></tr>
+   ${OUT.map((r,i)=>`<tr><td>${i?'':'发出'}</td><td>${r.mat}${r.st==='替代'?' ⁽替⁾':''}</td><td class="n">${f1(r.q)}</td><td class="n">${f1(r.q*10.92)}</td><td class="n">${f1(r.nc)}</td><td>${r.q!==r.nc?'NC65 漏录 2 车,补单中':''}</td></tr>`).join('')}
+   <tr><td></td><td><b>发出合计</b></td><td class="n"><b>${f1(TOT.out)}</b></td><td class="n"><b>${f1(TOT.out*10.92)}</b></td><td class="n">${f1(sum(OUT,'nc'))}</td><td></td></tr>
+   ${AUX.map((r,i)=>`<tr><td>${i?'':'辅料'}</td><td>${r.mat}${r.st==='估算'?' ⁽估⁾':''}</td><td class="n">${f1(r.q)}</td><td class="n">${f1(r.q*11)}</td><td class="n">${f1(r.nc)}</td><td>${r.src}</td></tr>`).join('')}
+   ${EMIT.map((r,i)=>`<tr><td>${i?'':'排放'}</td><td>${r.mat} ⁽估⁾</td><td class="n">${f1(r.q)}</td><td class="n">${f1(r.q*11)}</td><td class="n">—</td><td>${r.src}</td></tr>`).join('')}
+   <tr><td>自用</td><td>${SELF.mat} ⁽估⁾</td><td class="n">${f1(SELF.q)}</td><td class="n">${f1(SELF.q*11)}</td><td class="n">—</td><td>${SELF.src}</td></tr>
+   <tr><td>损失</td><td>${LOSS.mat} ⁽估⁾</td><td class="n">${f1(LOSS.q)}</td><td class="n">${f1(LOSS.q*11)}</td><td class="n">—</td><td>${LOSS.src}</td></tr>
+   <tr><td>库存</td><td>期初罐存</td><td class="n">${f1(TOT.stockB)}</td><td class="n">—</td><td class="n">—</td><td></td></tr>
+   <tr><td></td><td>期末罐存</td><td class="n">${f1(TOT.stockE)}</td><td class="n">—</td><td class="n">${f1(sum(TANKS,'nc'))}</td><td>T103 为插补值 ⁽替⁾</td></tr>
+   <tr><td></td><td>罐存变化</td><td class="n">${sg(TOT.stock)}</td><td class="n">—</td><td class="n">—</td><td></td></tr></tbody>
+   <tfoot><tr><td>平衡</td><td>平衡差 / 偏差率</td><td class="n">${f1(TOT.bal)}</td><td class="n">0.29%</td><td class="n"></td><td>本日 ${f1(TOT.pct,2)}%,在 ±0.50% 关注线内</td></tr></tfoot></table></div>
+   <div class="sign"><span>编制:统计员 李某</span><span>罐区确认:计量员 王某</span><span>审核:口径负责人 张某</span><span>⁽估⁾估算 ⁽替⁾替代</span></div></div>`;
+}
+
+// ---------------- 渲染与事件 ----------------
+const VIEWS={overview:vOverview,tanks:vTanks,units:vUnits,exceptions:vExc,confirm:vConfirm,config:vConfig,report:vReport};
+function renderChrome(){
+  const groups=[...new Set(PAGES.map(p=>p.grp))];
+  $('#nav').innerHTML=groups.map(g=>`<div class="navgrp">${g}</div>`+PAGES.filter(p=>p.grp===g).map(p=>{
+    const n=p.id==='exceptions'?EXC.filter(e=>e.st==='待处理'&&(S.role==='plan'||e.role===S.role)).length:0;
+    const home=ROLES[S.role].home===p.id;
+    return `<a href="#${p.id}" class="${S.page===p.id?'on':''}" ${p.roles.includes(S.role)?'':'style="opacity:.45"'}>${p.name}<span>${home?'<span class="badge">首页</span>':''}${p.p2?'<span class="badge p2">二期</span>':''}${n?`<span class="badge hot">${n}</span>`:''}</span></a>`;}).join('')).join('');
+  $('#roles').innerHTML=Object.entries(ROLES).map(([k,r])=>`<button class="${S.role===k?'on':''}" data-role="${k}" title="${r.who}">${r.name}</button>`).join('');
+  $('#stepper').innerHTML=STAGES.map((s,i)=>(i?'<span class="arrow">›</span>':'')+`<span class="step ${i<S.stage?'done':i===S.stage?'cur':''}"><i>${i<S.stage?'✓':i+1}</i>${s}</span>`).join('');
+}
+function render(){
+  renderChrome();
+  const page=PAGES.find(p=>p.id===S.page);
+  let html=VIEWS[S.page]();
+  if(!page.roles.includes(S.role))html=`<div class="card" style="background:var(--warn-soft)">当前角色"${ROLES[S.role].name}"通常不使用此页,原型中仍可浏览。</div>`+html;
+  $('#view').innerHTML=html;
+  drawDev();drawAA();drawYield();
+  if(S.page==='tanks')tankTrace('T103');
+}
+function route(){const h=location.hash.slice(1);S.page=VIEWS[h]?h:S.page;render();window.scrollTo(0,0);}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-role],[data-act],[data-tank],[data-unit],[data-close],[data-sel],[data-cfg]');if(!t||t.disabled)return;
+  if(t.dataset.role){S.role=t.dataset.role;try{localStorage.setItem('ax_role',S.role)}catch(_){}location.hash=ROLES[S.role].home;if(S.page===ROLES[S.role].home)render();toast(`已切换到${ROLES[S.role].name}视角:${ROLES[S.role].who}`);return;}
+  if(t.dataset.tank){document.querySelectorAll('tr.sel').forEach(r=>r.classList.remove('sel'));t.classList.add('sel');tankTrace(t.dataset.tank);return;}
+  if(t.dataset.unit){S.unit=t.dataset.unit;render();return;}
+  if(t.dataset.sel){S.sel=t.dataset.sel;render();return;}
+  if(t.dataset.cfg){S.cfgTab=t.dataset.cfg;render();return;}
+  if(t.dataset.close){const x=EXC.find(z=>z.id===t.dataset.close);x.st='已关闭';x.note=x.note||'原型:已填写原因';render();toast(`${x.id} 已关闭,系统重算受影响数量`);return;}
+  const a=t.dataset.act;
+  if(a==='tankok'){if(S.stage<1){S.stage=1;}toast('罐区平衡已确认(罐区计量员)');render();}
+  else if(a==='publish'){if(S.stage<1){toast('须先由罐区计量员确认罐区平衡');return;}S.stage=Math.max(S.stage,2);render();toast(`v${S.ver} 已发布,确认值已推送日效益`);}
+  else if(a==='lockm'){if(S.stage<2){toast('须先发布确认值');return;}S.stage=3;render();toast('11 月已月结锁定,后续修订走审批');}
+  else if(a==='recalc'||a==='recol'){if(a==='recol'){RECOL[0].last='2026-11-12';}S.ver+=1;S.stage=Math.min(S.stage,1);render();toast(a==='recol'?'已重采 11-08:规则 R02 仍触发,仅更新最近计算日':`已重算,生成 v${S.ver} 草稿,待重新发布`);}
+  else if(a==='revise'){toast('已提交修订申请,待口径负责人审批;通过后生成新版本并通知日效益');}
+  else if(a==='mapit'){EXC.find(z=>z.id==='E-1111-04').st='已关闭';toast('已映射,磅单 BD-0386 进入计算');render();}
+  else toast('原型:此操作仅演示入口位置');
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset&&e.target.dataset.unit){S.unit=e.target.dataset.unit;render();}});
+$('#pday').addEventListener('change',()=>toast('原型只含 2026-11-11 的演示数据'));
+window.addEventListener('hashchange',route);
+S.page=VIEWS[location.hash.slice(1)]?location.hash.slice(1):ROLES[S.role].home;render();
+</script>
