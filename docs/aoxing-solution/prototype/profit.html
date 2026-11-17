@@ -1,0 +1,183 @@
+<!doctype html><meta charset="utf-8"><style>
+/* Layout: 左侧导航 + 顶部生产日/角色条 + 内容区;每页"设计说明"折叠卡说明用途、角色与操作 */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --sunk:#f7f8fa; --ink:#121820; --ink2:#4a5561; --muted:#7f8994;
+  --line:#e2e6eb; --line2:#cfd5dc; --accent:#1d5fa6; --accent-ink:#ffffff; --accent-soft:#e7eff9;
+  --side:#18212c; --side-ink:#c9d2dc; --side-active:#26354a; --demo:#fff4d6; --demo-ink:#6b4d00;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --neg:#e34948;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --good-soft:#e5f5e5; --warn-soft:#fff3d6; --serious-soft:#fdeae2; --crit-soft:#fbe5e5; --info-soft:#e7eff9;
+  --band:rgba(42,120,214,.08);
+  --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1318; --surface:#181d24; --sunk:#141920; --ink:#eef1f4; --ink2:#b9c2cc; --muted:#8a939d;
+  --line:#2a313a; --line2:#39424d; --accent:#4b8fe0; --accent-ink:#0b1220; --accent-soft:#1d2b3d;
+  --side:#0b0f14; --side-ink:#aeb8c3; --side-active:#1d2734; --demo:#3a2e10; --demo-ink:#f3d58a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --neg:#e66767;
+  --good-soft:#15301a; --warn-soft:#362b10; --serious-soft:#3a2219; --crit-soft:#3b1a1a; --info-soft:#1d2b3d;
+  --band:rgba(57,135,229,.12); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1318; --surface:#181d24; --sunk:#141920; --ink:#eef1f4; --ink2:#b9c2cc; --muted:#8a939d;
+  --line:#2a313a; --line2:#39424d; --accent:#4b8fe0; --accent-ink:#0b1220; --accent-soft:#1d2b3d;
+  --side:#0b0f14; --side-ink:#aeb8c3; --side-active:#1d2734; --demo:#3a2e10; --demo-ink:#f3d58a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --neg:#e66767;
+  --good-soft:#15301a; --warn-soft:#362b10; --serious-soft:#3a2219; --crit-soft:#3b1a1a; --info-soft:#1d2b3d;
+  --band:rgba(57,135,229,.12); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55}
+button{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh}
+.side{background:var(--side);color:var(--side-ink);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:4px 10px 16px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:12px}
+.brand b{display:block;color:#fff;font-size:15px;letter-spacing:.02em}
+.brand span{font-size:12px;opacity:.7}
+.navgrp{font-size:11px;letter-spacing:.08em;opacity:.55;padding:12px 10px 4px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;color:var(--side-ink);text-decoration:none;font-size:13.5px}
+.nav a:hover{background:var(--side-active)}
+.nav a.on{background:var(--side-active);color:#fff;box-shadow:inset 2px 0 0 var(--s1)}
+.nav a:focus-visible{outline:2px solid var(--s1);outline-offset:1px}
+.badge{font-size:11px;padding:0 6px;border-radius:9px;background:rgba(255,255,255,.1)}
+.badge.hot{background:var(--crit);color:#fff}
+.badge.p2{background:transparent;border:1px solid rgba(255,255,255,.25)}
+.main{min-width:0;display:flex;flex-direction:column}
+.demo{background:var(--demo);color:var(--demo-ink);font-size:12.5px;padding-block:6px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.field{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2)}
+.field select,.field input{font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line2);border-radius:6px;padding:4px 8px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:5px 12px;cursor:pointer;font-size:13px}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.stepper{display:flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:wrap;font-size:12px}
+.step{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:12px;background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+.step.done{color:var(--ink2);background:var(--good-soft);border-color:transparent}
+.step.cur{color:var(--ink);background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.step i{font-style:normal;font-size:11px}
+.arrow{color:var(--muted)}
+.content{padding-block:20px 48px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px;max-width:1360px;width:100%}
+.phead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.phead h1{font-size:21px;margin:0;text-wrap:balance}
+.phead p{margin:2px 0 0;color:var(--ink2);font-size:13px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line2);background:var(--surface);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.design{background:var(--surface);border:1px dashed var(--line2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--ink2)}
+.design summary{cursor:pointer;color:var(--ink);font-weight:600}
+.design ul{margin:8px 0 2px;padding-left:18px;display:grid;gap:3px}
+.design b{color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.card h2{font-size:14.5px;margin:0 0 2px}
+.card .sub{font-size:12px;color:var(--muted);margin:0 0 10px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.g2e{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.tile .l{font-size:12px;color:var(--ink2)}
+.tile .v{font-size:22px;font-weight:600;margin-top:2px;white-space:nowrap}
+.tile .v small{font-size:12px;font-weight:400;color:var(--muted);margin-left:3px}
+.tile .d{font-size:12px;color:var(--muted);margin-top:2px}
+.eq{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+.eq .t{flex:1 1 110px;background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+.eq .t .l{font-size:12px;color:var(--ink2)}
+.eq .t .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.eq .t.res{background:var(--accent-soft);border-color:var(--accent)}
+.eq .op{align-self:center;color:var(--muted);font-size:18px}
+.tw{overflow-x:auto;margin:0 -4px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-weight:600;color:var(--ink2);text-align:left;font-size:12px;padding:7px 8px;border-bottom:1px solid var(--line2);white-space:nowrap;background:var(--sunk)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}
+tr.click:hover td,tr.sel td{background:var(--accent-soft)}
+tfoot td{font-weight:600;border-top:1px solid var(--line2)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:1px 8px;border-radius:10px;white-space:nowrap;color:var(--ink)}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.good{background:var(--good-soft)} .chip.good::before{background:var(--good)}
+.chip.warn{background:var(--warn-soft)} .chip.warn::before{background:var(--warn)}
+.chip.serious{background:var(--serious-soft)} .chip.serious::before{background:var(--serious)}
+.chip.crit{background:var(--crit-soft)} .chip.crit::before{background:var(--crit)}
+.chip.info{background:var(--info-soft)} .chip.info::before{background:var(--s1)}
+.chip.mute{background:var(--sunk);color:var(--ink2)} .chip.mute::before{background:var(--muted)}
+.tag{font-size:11.5px;padding:0 6px;border:1px solid var(--line2);border-radius:4px;color:var(--ink2);white-space:nowrap}
+.pos{color:var(--ink)} .mono{font-family:var(--mono);font-size:12px}
+.meter{display:inline-block;width:70px;height:8px;border-radius:4px;background:var(--accent-soft);vertical-align:middle;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--s1);border-radius:4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.legend i.ln{height:2px;width:14px}
+svg text{fill:var(--muted);font-size:11px;font-family:var(--sans)}
+.todo{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.todo li{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+.todo li div{min-width:0}
+.todo .m{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:8px 12px;cursor:pointer;color:var(--ink2);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px}
+.chain .u{flex:1 1 180px;border:1px solid var(--line2);border-radius:8px;padding:10px 12px;background:var(--sunk);cursor:pointer;min-width:0}
+.chain .u.on{border-color:var(--accent);background:var(--accent-soft)}
+.chain .u.off{opacity:.55;cursor:default}
+.chain .u b{display:block}
+.chain .u .m{font-size:12px;color:var(--ink2)}
+.chain .ar{align-self:center;color:var(--muted)}
+.trace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.trace .lv{border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--sunk);min-width:0}
+.trace .lv h3{margin:0 0 6px;font-size:13px}
+.trace .lv p{margin:2px 0;font-size:12.5px;color:var(--ink2);white-space:normal}
+.segbar{display:flex;gap:2px;height:28px;margin:4px 0 12px}
+.segbar div{border-radius:4px;color:#fff;font-size:11.5px;padding:0 6px;display:flex;align-items:center;white-space:nowrap;overflow:visible;min-width:0}
+.ul{display:flex;justify-content:space-between;font-size:13px;gap:8px}
+.tree{list-style:none;margin:0;padding:0;font-size:13px}
+.tree ul{list-style:none;margin:0;padding-left:18px;border-left:1px solid var(--line)}
+.tree li{padding:3px 0}
+.tree .k{color:var(--muted);font-size:12px;margin-left:6px}
+.report{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:22px 26px;max-width:900px}
+.report h2{text-align:center;font-size:18px;margin:0}
+.report .meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--ink2);margin:10px 0 12px}
+.report .sign{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:16px;font-size:12.5px;color:var(--ink2)}
+.note{font-size:12px;color:var(--muted)}
+.tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line2);box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:6px;padding:6px 9px;font-size:12px;z-index:50;max-width:260px}
+.toast{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:6px;font-size:13px;z-index:60;max-width:calc(100vw - 40px)}
+.lock{font-size:11.5px;color:var(--muted)}
+@media (max-width:1100px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:static;height:auto;padding:10px max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px))}
+  .brand{border:0;padding:2px 4px 8px;margin:0}
+  .navgrp{display:none}
+  .nav{display:flex;gap:4px;overflow-x:auto}
+  .nav a{white-space:nowrap}
+  .g2e,.trace{grid-template-columns:minmax(0,1fr)}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stepper{margin-left:0}
+  .top{position:static}
+  .report{padding:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app"><aside class="side"><div class="brand"><b>日效益</b><span>东营奥星石化 · 示意</span></div><nav class="nav"><div class="navgrp">物料平衡</div><a href="#">全厂日平衡总览</a><a href="#">罐区库存与账实差异</a><a href="#">装置级平衡<span><span class="badge p2">二期</span></span></a><a href="#">异常与补采待办</a><a href="#">数据确认与发布</a><div class="navgrp">日效益</div><a href="#" class="on">全厂日利润</a><a href="#">装置日效益<span><span class="badge p2">二期</span></span></a><a href="#">月度对账</a><div class="navgrp">IoT 平台</div><a href="#" class="">计量点与采集监控</a><a href="#">规则与预警</a><a href="#">数据服务</a></nav></aside>
+<div class="main"><div class="demo">示意页面:数据均为示例,用于说明方案形态,不是奥星实际生产经营数据。</div>
+<div class="top"><label class="field">生产日 <input type="date" value="2026-11-11"></label><div class="field"><span>原料价口径</span><div class="seg"><button class="on">批次成本价</button><button>市场重置价</button></div></div><div class="stepper"><span class="step done">✓ 物料平衡确认值 v1</span><span class="arrow">›</span><span class="step cur">日效益已计算</span><span class="arrow">›</span><span class="step">月结锁定</span></div></div><div class="content"><div class="phead"><div><h1>全厂日利润</h1><p>生产日 2026-11-11 · 数量取物料平衡确认值 v1 · 原料按批次成本价</p></div><div class="actions"><button class="btn">切换为重置价对照</button><button class="btn pri">推送日报</button></div></div>
+<div class="tiles"><div class="tile"><div class="l">全厂日利润</div><div class="v">135.8<small>万元</small></div><div class="d">较昨日 −22.5 万元</div></div>
+<div class="tile"><div class="l">吨原料利润</div><div class="v">220<small>元/t</small></div><div class="d">原料进厂 6,172.7 t</div></div>
+<div class="tile"><div class="l">产品收入(净价)</div><div class="v">2,421.5<small>万元</small></div><div class="d">8 种产品,不含税</div></div>
+<div class="tile"><div class="l">原料成本</div><div class="v">2,558.8<small>万元</small></div><div class="d">批次成本价</div></div>
+<div class="tile"><div class="l">月累计 / 预算</div><div class="v">1,486<small>万元</small></div><div class="d">完成 90.1%(预算 1,650)</div></div>
+<div class="tile"><div class="l">加工收益 / 库存损益</div><div class="v">172.6 / −36.8</div><div class="d">重置价 4,080 元/t 对照</div></div></div>
+<div class="grid g2"><div class="card"><h2>利润构成(万元)</h2><p class="sub">产出价值 − 投入价值 − 转化代价 + 存货变化;平衡差 25.6 t 按损失计,不计价值</p><svg viewBox="0 0 600 260" width="100%"><rect x="40" y="58.6" width="56" height="161.4" fill="var(--s1)" rx="2"/><text x="68" y="54.6" text-anchor="middle" style="fill:var(--ink);font-size:11px">+2,421.5</text><text x="68" y="244" text-anchor="middle">产品收入</text><rect x="120" y="58.6" width="56" height="170.6" fill="var(--s2)" rx="2"/><text x="148" y="54.6" text-anchor="middle" style="fill:var(--ink);font-size:11px">-2,558.8</text><text x="148" y="244" text-anchor="middle">原料成本</text><rect x="200" y="204.8" width="56" height="24.4" fill="var(--s1)" rx="2"/><text x="228" y="200.8" text-anchor="middle" style="fill:var(--ink);font-size:11px">+365.5</text><text x="228" y="244" text-anchor="middle">罐存增加</text><rect x="280" y="204.8" width="56" height="3.2" fill="var(--s2)" rx="2"/><text x="308" y="200.8" text-anchor="middle" style="fill:var(--ink);font-size:11px">-48.6</text><text x="308" y="244" text-anchor="middle">能源</text><rect x="360" y="208.0" width="56" height="2.0" fill="var(--s2)" rx="2"/><text x="388" y="204.0" text-anchor="middle" style="fill:var(--ink);font-size:11px">-12.3</text><text x="388" y="244" text-anchor="middle">辅材</text><rect x="440" y="208.8" width="56" height="2.1" fill="var(--s2)" rx="2"/><text x="468" y="204.8" text-anchor="middle" style="fill:var(--ink);font-size:11px">-31.5</text><text x="468" y="244" text-anchor="middle">固定费</text><rect x="520" y="210.9" width="56" height="9.1" fill="var(--s3)" rx="2"/><text x="548" y="206.9" text-anchor="middle" style="fill:var(--ink);font-size:11px;font-weight:600">135.8</text><text x="548" y="244" text-anchor="middle">日利润</text><line x1="30" x2="590" y1="220" y2="220" stroke="var(--line2)"/></svg></div>
+<div class="card"><h2>较昨日变化:价量分解</h2><p class="sub">价格影响 = 今日量 × 价差;数量影响 = 昨日价 × 量差</p><div class="tw"><table><thead><tr><th>项目</th><th class="n">万元</th><th>因素</th></tr></thead><tbody><tr><td>昨日全厂利润</td><td class="n">158.3</td><td></td></tr><tr><td>柴油挂牌价下调 100 元/t</td><td class="n">−24.9</td><td>价格因素</td></tr><tr><td>产品产量增加</td><td class="n">+5.7</td><td>数量因素</td></tr><tr><td>原料批次成本下降</td><td class="n">+3.1</td><td>价格因素</td></tr><tr><td>能耗上升(加热炉燃料气)</td><td class="n">−6.4</td><td>数量因素</td></tr><tr><td>今日全厂利润</td><td class="n">135.8</td><td></td></tr></tbody></table></div><p class="note" style="margin-top:10px">解读:今日利润下降主要因柴油挂牌价下调,影响约 24.9 万元。</p></div></div>
+<div class="grid g2e"><div class="card"><h2>产品收入明细</h2><p class="sub">数量 = 物料平衡确认值;净价 = 含税价扣增值税、消费税、附加</p><div class="tw"><table><thead><tr><th>产品</th><th class="n">数量 t</th><th class="n">净价 元/t</th><th class="n">金额 万元</th><th>价格来源</th></tr></thead><tbody><tr><td>国六柴油</td><td class="n">2,486.2</td><td class="n">5,250</td><td class="n">1,305.3</td><td>当日销售订单加权</td></tr><tr><td>加氢石脑油</td><td class="n">612.5</td><td class="n">4,600</td><td class="n">281.8</td><td>当日销售订单加权</td></tr><tr><td>基础油 60N/100N/250N</td><td class="n">286.4</td><td class="n">6,200</td><td class="n">177.6</td><td>挂牌价(无成交)</td></tr><tr><td>工业白油</td><td class="n">341.8</td><td class="n">7,000</td><td class="n">239.3</td><td>当日销售订单加权</td></tr><tr><td>道路沥青</td><td class="n">1,188.6</td><td class="n">2,900</td><td class="n">344.7</td><td>当日销售订单加权</td></tr><tr><td>液化气</td><td class="n">168.3</td><td class="n">3,900</td><td class="n">65.6</td><td>挂牌价(无成交)</td></tr><tr><td>液氨</td><td class="n">21.4</td><td class="n">2,600</td><td class="n">5.6</td><td>最近挂牌价</td></tr><tr><td>硫氢化钠</td><td class="n">9.6</td><td class="n">1,800</td><td class="n">1.7</td><td>最近挂牌价</td></tr></tbody><tfoot><tr><td>合计</td><td class="n">5,114.8</td><td></td><td class="n">2,421.5</td><td></td></tr></tfoot></table></div></div>
+<div class="card"><h2>投入与转化费用</h2><p class="sub">能源取 IoT 计量 × 单价;固定费 = 月预算 ÷ 当月天数</p><div class="tw"><table><thead><tr><th>项目</th><th class="n">数量 t</th><th class="n">单价 元/t</th><th class="n">金额 万元</th><th>来源</th></tr></thead><tbody><tr><td>进口燃料油</td><td class="n">6,120.4</td><td class="n">4,150</td><td class="n">2,540.0</td><td>NC65 批次成本</td></tr><tr><td>外购天然气(制氢)</td><td class="n">52.3</td><td class="n">3,600</td><td class="n">18.8</td><td>供气合同价</td></tr>
+<tr><td>罐存增加(存货)</td><td class="n">880.8</td><td class="n">4,150</td><td class="n">+365.5</td><td>罐存确认值 × 批次成本</td></tr>
+<tr><td>能源(电、蒸汽、燃料气、水)</td><td class="n">—</td><td class="n">—</td><td class="n">48.6</td><td>IoT 能耗计量</td></tr>
+<tr><td>辅材(化剂、催化剂摊销)</td><td class="n">—</td><td class="n">—</td><td class="n">12.3</td><td>NC65 材料出库</td></tr>
+<tr><td>固定费用</td><td class="n">—</td><td class="n">—</td><td class="n">31.5</td><td>NC65 月预算 ÷ 30</td></tr></tbody></table></div></div></div></div></div></div>
