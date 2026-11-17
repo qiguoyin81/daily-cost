@@ -1,0 +1,178 @@
+<!doctype html><meta charset="utf-8"><style>
+/* Layout: 左侧导航 + 顶部生产日/角色条 + 内容区;每页"设计说明"折叠卡说明用途、角色与操作 */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --sunk:#f7f8fa; --ink:#121820; --ink2:#4a5561; --muted:#7f8994;
+  --line:#e2e6eb; --line2:#cfd5dc; --accent:#1d5fa6; --accent-ink:#ffffff; --accent-soft:#e7eff9;
+  --side:#18212c; --side-ink:#c9d2dc; --side-active:#26354a; --demo:#fff4d6; --demo-ink:#6b4d00;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --neg:#e34948;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --good-soft:#e5f5e5; --warn-soft:#fff3d6; --serious-soft:#fdeae2; --crit-soft:#fbe5e5; --info-soft:#e7eff9;
+  --band:rgba(42,120,214,.08);
+  --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1318; --surface:#181d24; --sunk:#141920; --ink:#eef1f4; --ink2:#b9c2cc; --muted:#8a939d;
+  --line:#2a313a; --line2:#39424d; --accent:#4b8fe0; --accent-ink:#0b1220; --accent-soft:#1d2b3d;
+  --side:#0b0f14; --side-ink:#aeb8c3; --side-active:#1d2734; --demo:#3a2e10; --demo-ink:#f3d58a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --neg:#e66767;
+  --good-soft:#15301a; --warn-soft:#362b10; --serious-soft:#3a2219; --crit-soft:#3b1a1a; --info-soft:#1d2b3d;
+  --band:rgba(57,135,229,.12); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1318; --surface:#181d24; --sunk:#141920; --ink:#eef1f4; --ink2:#b9c2cc; --muted:#8a939d;
+  --line:#2a313a; --line2:#39424d; --accent:#4b8fe0; --accent-ink:#0b1220; --accent-soft:#1d2b3d;
+  --side:#0b0f14; --side-ink:#aeb8c3; --side-active:#1d2734; --demo:#3a2e10; --demo-ink:#f3d58a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --neg:#e66767;
+  --good-soft:#15301a; --warn-soft:#362b10; --serious-soft:#3a2219; --crit-soft:#3b1a1a; --info-soft:#1d2b3d;
+  --band:rgba(57,135,229,.12); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55}
+button{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh}
+.side{background:var(--side);color:var(--side-ink);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:4px 10px 16px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:12px}
+.brand b{display:block;color:#fff;font-size:15px;letter-spacing:.02em}
+.brand span{font-size:12px;opacity:.7}
+.navgrp{font-size:11px;letter-spacing:.08em;opacity:.55;padding:12px 10px 4px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;color:var(--side-ink);text-decoration:none;font-size:13.5px}
+.nav a:hover{background:var(--side-active)}
+.nav a.on{background:var(--side-active);color:#fff;box-shadow:inset 2px 0 0 var(--s1)}
+.nav a:focus-visible{outline:2px solid var(--s1);outline-offset:1px}
+.badge{font-size:11px;padding:0 6px;border-radius:9px;background:rgba(255,255,255,.1)}
+.badge.hot{background:var(--crit);color:#fff}
+.badge.p2{background:transparent;border:1px solid rgba(255,255,255,.25)}
+.main{min-width:0;display:flex;flex-direction:column}
+.demo{background:var(--demo);color:var(--demo-ink);font-size:12.5px;padding-block:6px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.field{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2)}
+.field select,.field input{font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line2);border-radius:6px;padding:4px 8px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:5px 12px;cursor:pointer;font-size:13px}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.stepper{display:flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:wrap;font-size:12px}
+.step{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:12px;background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+.step.done{color:var(--ink2);background:var(--good-soft);border-color:transparent}
+.step.cur{color:var(--ink);background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.step i{font-style:normal;font-size:11px}
+.arrow{color:var(--muted)}
+.content{padding-block:20px 48px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px;max-width:1360px;width:100%}
+.phead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.phead h1{font-size:21px;margin:0;text-wrap:balance}
+.phead p{margin:2px 0 0;color:var(--ink2);font-size:13px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line2);background:var(--surface);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.design{background:var(--surface);border:1px dashed var(--line2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--ink2)}
+.design summary{cursor:pointer;color:var(--ink);font-weight:600}
+.design ul{margin:8px 0 2px;padding-left:18px;display:grid;gap:3px}
+.design b{color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.card h2{font-size:14.5px;margin:0 0 2px}
+.card .sub{font-size:12px;color:var(--muted);margin:0 0 10px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.g2e{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.tile .l{font-size:12px;color:var(--ink2)}
+.tile .v{font-size:22px;font-weight:600;margin-top:2px;white-space:nowrap}
+.tile .v small{font-size:12px;font-weight:400;color:var(--muted);margin-left:3px}
+.tile .d{font-size:12px;color:var(--muted);margin-top:2px}
+.eq{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+.eq .t{flex:1 1 110px;background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+.eq .t .l{font-size:12px;color:var(--ink2)}
+.eq .t .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.eq .t.res{background:var(--accent-soft);border-color:var(--accent)}
+.eq .op{align-self:center;color:var(--muted);font-size:18px}
+.tw{overflow-x:auto;margin:0 -4px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-weight:600;color:var(--ink2);text-align:left;font-size:12px;padding:7px 8px;border-bottom:1px solid var(--line2);white-space:nowrap;background:var(--sunk)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}
+tr.click:hover td,tr.sel td{background:var(--accent-soft)}
+tfoot td{font-weight:600;border-top:1px solid var(--line2)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:1px 8px;border-radius:10px;white-space:nowrap;color:var(--ink)}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.good{background:var(--good-soft)} .chip.good::before{background:var(--good)}
+.chip.warn{background:var(--warn-soft)} .chip.warn::before{background:var(--warn)}
+.chip.serious{background:var(--serious-soft)} .chip.serious::before{background:var(--serious)}
+.chip.crit{background:var(--crit-soft)} .chip.crit::before{background:var(--crit)}
+.chip.info{background:var(--info-soft)} .chip.info::before{background:var(--s1)}
+.chip.mute{background:var(--sunk);color:var(--ink2)} .chip.mute::before{background:var(--muted)}
+.tag{font-size:11.5px;padding:0 6px;border:1px solid var(--line2);border-radius:4px;color:var(--ink2);white-space:nowrap}
+.pos{color:var(--ink)} .mono{font-family:var(--mono);font-size:12px}
+.meter{display:inline-block;width:70px;height:8px;border-radius:4px;background:var(--accent-soft);vertical-align:middle;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--s1);border-radius:4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.legend i.ln{height:2px;width:14px}
+svg text{fill:var(--muted);font-size:11px;font-family:var(--sans)}
+.todo{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.todo li{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+.todo li div{min-width:0}
+.todo .m{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:8px 12px;cursor:pointer;color:var(--ink2);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px}
+.chain .u{flex:1 1 180px;border:1px solid var(--line2);border-radius:8px;padding:10px 12px;background:var(--sunk);cursor:pointer;min-width:0}
+.chain .u.on{border-color:var(--accent);background:var(--accent-soft)}
+.chain .u.off{opacity:.55;cursor:default}
+.chain .u b{display:block}
+.chain .u .m{font-size:12px;color:var(--ink2)}
+.chain .ar{align-self:center;color:var(--muted)}
+.trace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.trace .lv{border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--sunk);min-width:0}
+.trace .lv h3{margin:0 0 6px;font-size:13px}
+.trace .lv p{margin:2px 0;font-size:12.5px;color:var(--ink2);white-space:normal}
+.segbar{display:flex;gap:2px;height:28px;margin:4px 0 12px}
+.segbar div{border-radius:4px;color:#fff;font-size:11.5px;padding:0 6px;display:flex;align-items:center;white-space:nowrap;overflow:visible;min-width:0}
+.ul{display:flex;justify-content:space-between;font-size:13px;gap:8px}
+.tree{list-style:none;margin:0;padding:0;font-size:13px}
+.tree ul{list-style:none;margin:0;padding-left:18px;border-left:1px solid var(--line)}
+.tree li{padding:3px 0}
+.tree .k{color:var(--muted);font-size:12px;margin-left:6px}
+.report{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:22px 26px;max-width:900px}
+.report h2{text-align:center;font-size:18px;margin:0}
+.report .meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--ink2);margin:10px 0 12px}
+.report .sign{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:16px;font-size:12.5px;color:var(--ink2)}
+.note{font-size:12px;color:var(--muted)}
+.tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line2);box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:6px;padding:6px 9px;font-size:12px;z-index:50;max-width:260px}
+.toast{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:6px;font-size:13px;z-index:60;max-width:calc(100vw - 40px)}
+.lock{font-size:11.5px;color:var(--muted)}
+@media (max-width:1100px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:static;height:auto;padding:10px max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px))}
+  .brand{border:0;padding:2px 4px 8px;margin:0}
+  .navgrp{display:none}
+  .nav{display:flex;gap:4px;overflow-x:auto}
+  .nav a{white-space:nowrap}
+  .g2e,.trace{grid-template-columns:minmax(0,1fr)}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stepper{margin-left:0}
+  .top{position:static}
+  .report{padding:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app"><aside class="side"><div class="brand"><b>IoT 平台</b><span>东营奥星石化 · 示意</span></div><nav class="nav"><div class="navgrp">物料平衡</div><a href="#">全厂日平衡总览</a><a href="#">罐区库存与账实差异</a><a href="#">装置级平衡<span><span class="badge p2">二期</span></span></a><a href="#">异常与补采待办</a><a href="#">数据确认与发布</a><div class="navgrp">日效益</div><a href="#" class="">全厂日利润</a><a href="#">装置日效益<span><span class="badge p2">二期</span></span></a><a href="#">月度对账</a><div class="navgrp">IoT 平台</div><a href="#" class="on">计量点与采集监控</a><a href="#">规则与预警</a><a href="#">数据服务</a></nav></aside>
+<div class="main"><div class="demo">示意页面:数据均为示例,用于说明方案形态,不是奥星实际生产经营数据。</div>
+<div class="top"><div class="field"><span>采集时刻</span><input type="text" value="2026-11-12 00:00 日结快照" style="width:190px"></div><div class="stepper"><span class="step done">✓ IoT 时序库在线</span><span class="arrow">›</span><span class="step done">✓ NC65 视图同步 23:00</span><span class="arrow">›</span><span class="step done">✓ 地磅同步 23:55</span></div></div><div class="content"><div class="phead"><div><h1>计量点与采集监控</h1><p>IoT 平台统一接入 DCS、罐区、地磅、NC65,按计量点组织数据,供物料平衡、日效益及其他场景复用</p></div><div class="actions"><button class="btn">按时段重取</button><button class="btn pri">导出点表</button></div></div>
+<div class="tiles"><div class="tile"><div class="l">计量点</div><div class="v">85<small>个</small></div><div class="d">罐表 22 · 流量 41 · 地磅 4 · 人工 18</div></div>
+<div class="tile"><div class="l">今日采集完整率</div><div class="v">97.6<small>%</small></div><div class="d">83 / 85 在线,目标 ≥ 98%</div></div>
+<div class="tile"><div class="l">已映射三方编码</div><div class="v">96.5<small>%</small></div><div class="d">待映射 3 项(地磅品名 1)</div></div>
+<div class="tile"><div class="l">检定 30 天内到期</div><div class="v">2<small>台</small></div><div class="d">FI-2003、LT-T103</div></div>
+<div class="tile"><div class="l">今日触发规则</div><div class="v">5<small>次</small></div><div class="d">已派单 5,已关闭 1</div></div>
+<div class="tile"><div class="l">历史在线</div><div class="v">36<small>个月</small></div><div class="d">5 分钟值 + 日结快照</div></div></div>
+<div class="card"><h2>计量点状态</h2><p class="sub">一个计量点挂接 IoT 位号、地磅磅点、NC65 仓库与物料,归属到平衡对象</p><div class="tw"><table><thead><tr><th>位号</th><th>计量点</th><th>归属对象</th><th>器具</th><th>方向</th><th class="n">最新值</th><th class="n">日结处理值</th><th>状态</th><th>检定到期</th></tr></thead><tbody><tr><td class="mono">LT-T101</td><td>T101 原料罐液位</td><td>原料罐区/T101</td><td>雷达液位计</td><td>存</td><td class="n">12.846 m</td><td class="n">12.846 m</td><td><span class="chip good">正常</span></td><td>2027-03</td></tr><tr><td class="mono">LT-T103</td><td>T103 原料罐液位</td><td>原料罐区/T103</td><td>雷达液位计</td><td>存</td><td class="n">9.320 m</td><td class="n">9.320 m</td><td><span class="chip crit">冻结 4 h</span></td><td>2026-12</td></tr><tr><td class="mono">TT-T301</td><td>T301 柴油罐多点温度</td><td>成品罐区/T301</td><td>多点温度计</td><td>存</td><td class="n">31.6 ℃</td><td class="n">31.4 ℃</td><td><span class="chip good">正常</span></td><td>2027-05</td></tr><tr><td class="mono">FQ-0901</td><td>外购天然气累计</td><td>厂界/制氢</td><td>质量流量计</td><td>进</td><td class="n">1,286,450 Nm³</td><td class="n">72,900 Nm³/d</td><td><span class="chip good">正常</span></td><td>2027-01</td></tr><tr><td class="mono">FI-2003</td><td>加氢裂化进料</td><td>加氢裂化</td><td>孔板流量计</td><td>进</td><td class="n">—</td><td class="n">按罐收替代</td><td><span class="chip warn">缺失 3.5 h</span></td><td>2026-11</td></tr><tr><td class="mono">FQ-1105</td><td>加热炉燃料气</td><td>常减压</td><td>涡街流量计</td><td>自用</td><td class="n">35,820 Nm³</td><td class="n">35,820 Nm³/d</td><td><span class="chip good">正常</span></td><td>2027-02</td></tr><tr><td class="mono">FQ-1801</td><td>火炬气</td><td>厂界/火炬</td><td>超声波流量计</td><td>损失</td><td class="n">—</td><td class="n">比例法估算</td><td><span class="chip mute">无计量</span></td><td>—</td></tr><tr><td class="mono">WB-01</td><td>1# 汽车衡</td><td>厂界/原料</td><td>地磅</td><td>进</td><td class="n">54 车</td><td class="n">6,120.4 t</td><td><span class="chip good">正常</span></td><td>2027-04</td></tr></tbody></table></div></div>
+<div class="grid g2e"><div class="card"><h2>规则与预警(规则引擎)</h2><p class="sub">内置数据监控规则与补采规则,规则可配置</p><div class="tw"><table><thead><tr><th>编号</th><th>规则</th><th>条件</th><th>处置</th><th class="n">今日</th></tr></thead><tbody><tr><td class="mono">R01</td><td>缺数</td><td>采集率 < 98%</td><td>标记 → 替代或估算</td><td class="n">3</td></tr><tr><td class="mono">R02</td><td>冻结</td><td>液位 ≥ 2 h 无变化且有收付</td><td>罐区计量员核查</td><td class="n">1</td></tr><tr><td class="mono">R03</td><td>跳变</td><td>5 分钟变化 > 量程 5%</td><td>剔除并插补</td><td class="n">0</td></tr><tr><td class="mono">R04</td><td>偏差超补采线</td><td>全厂/罐区偏差率 > ±1.0%</td><td>进入补采计划,补齐后重算</td><td class="n">0</td></tr><tr><td class="mono">R05</td><td>密度超期</td><td>ρ20 最近化验 > 2 天</td><td>推送质检补样</td><td class="n">1</td></tr><tr><td class="mono">R06</td><td>能耗越界</td><td>吨油燃料气 > 基线 +10%</td><td>推送装置工艺员</td><td class="n">0</td></tr></tbody></table></div></div>
+<div class="card"><h2>数据服务(对外接口)</h2><p class="sub">同一份数据,多个场景复用</p><div class="tw"><table><thead><tr><th>服务</th><th>使用方</th><th>频率</th></tr></thead><tbody><tr><td>物料平衡确认值</td><td>日效益模块</td><td>每日 10:00 前,带版本</td></tr><tr><td>罐存日快照</td><td>NC65 库存对照、罐区工作台</td><td>每日 0 点</td></tr><tr><td>能耗日累计</td><td>日效益成本费用、能耗预警</td><td>每日</td></tr><tr><td>计量点质量状态</td><td>异常与补采待办</td><td>实时</td></tr><tr><td>统一指标库查询</td><td>驾驶舱、智能问数</td><td>按需</td></tr></tbody></table></div></div></div></div></div></div>
